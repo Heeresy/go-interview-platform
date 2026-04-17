@@ -6,19 +6,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Tests not yet implemented\"",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
+    "confetti-js": "^0.0.18",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.0",
     "typescript": "^5"
   }
 }
