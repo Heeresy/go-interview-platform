@@ -377,6 +377,14 @@ textarea {
   font-size: var(--font-size-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
+  /* Default styles for badge */
+  background: rgba(120, 220, 232, 0.15);
+  color: var(--accent-blue);
+}
+
+[data-theme="light"] .badge {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
 }
 
 .badge--easy {
