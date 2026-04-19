@@ -75,7 +75,7 @@ const CardSwap = ({
 
   const childArr = useMemo(() => Children.toArray(children), [children])
   const refs = useMemo(
-    () => childArr.map(() => React.createRef()),
+    () => childArr.map(() => React.createRef<HTMLDivElement>()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [childArr.length]
   )
@@ -83,7 +83,7 @@ const CardSwap = ({
   const order = useRef(Array.from({ length: childArr.length }, (_, i) => i))
 
   const tlRef = useRef<gsap.core.Timeline | null>(null)
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -149,7 +149,7 @@ const CardSwap = ({
     }
 
     swap()
-    intervalRef.current = window.setInterval(swap, delay)
+    intervalRef.current = window.setInterval(swap, delay) as unknown as NodeJS.Timeout
 
     if (pauseOnHover) {
       const node = container.current
@@ -159,7 +159,7 @@ const CardSwap = ({
       }
       const resume = () => {
         tlRef.current?.play()
-        intervalRef.current = window.setInterval(swap, delay)
+        intervalRef.current = window.setInterval(swap, delay) as unknown as NodeJS.Timeout
       }
       node?.addEventListener('mouseenter', pause)
       node?.addEventListener('mouseleave', resume)
@@ -180,9 +180,9 @@ const CardSwap = ({
       ? cloneElement(child, {
           key: i,
           ref: refs[i],
-          style: { width, height, ...(child.props.style ?? {}) },
+          style: { width, height, ...((child.props as any).style ?? {}) },
           onClick: (e: any) => {
-            child.props.onClick?.(e)
+            (child.props as any).onClick?.(e)
             onCardClick?.(i)
           },
         } as any)
@@ -197,4 +197,9 @@ const CardSwap = ({
 }
 
 export default CardSwap
+
+
+
+
+
 

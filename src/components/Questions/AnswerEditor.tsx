@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 
 interface AnswerEditorProps {
   questionId: string
@@ -12,6 +13,7 @@ export function AnswerEditor({ questionId, onSubmit }: AnswerEditorProps) {
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const prefersReducedMotion = useReducedMotion()
 
   const handleSubmit = useCallback(async () => {
     if (!answer.trim()) {
@@ -45,6 +47,7 @@ export function AnswerEditor({ questionId, onSubmit }: AnswerEditorProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={prefersReducedMotion ? { duration: 0 } : undefined}
       className="answer-editor"
     >
       <label htmlFor="answer-textarea" className="block mb-2 font-semibold">
@@ -65,6 +68,7 @@ export function AnswerEditor({ questionId, onSubmit }: AnswerEditorProps) {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : undefined}
           className="text-red-500 text-sm mt-2"
         >
           {error}
@@ -73,8 +77,8 @@ export function AnswerEditor({ questionId, onSubmit }: AnswerEditorProps) {
       <motion.button
         onClick={handleSubmit}
         disabled={!answer.trim() || loading}
-        whileTap={{ scale: 0.95 }}
-        whileHover={!loading ? { scale: 1.02 } : {}}
+        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+        whileHover={!loading && !prefersReducedMotion ? { scale: 1.02 } : {}}
         className="btn btn--primary btn--lg mt-4 w-full"
       >
         {loading ? 'Submitting...' : 'Submit Answer'}
@@ -82,4 +86,6 @@ export function AnswerEditor({ questionId, onSubmit }: AnswerEditorProps) {
     </motion.div>
   )
 }
+
+
 

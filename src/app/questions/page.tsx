@@ -85,6 +85,7 @@ export default function QuestionsPage() {
                                     className={cn('badge', !selectedCategory && 'badge--info')}
                                     onClick={() => setSelectedCategory(null)}
                                     style={{ cursor: 'pointer', border: 'none' }}
+                                    aria-label="Показать все категории"
                                 >
                                     Все
                                 </button>
@@ -94,6 +95,7 @@ export default function QuestionsPage() {
                                         className={cn('badge', selectedCategory === cat.id && 'badge--info')}
                                         onClick={() => setSelectedCategory(cat.id)}
                                         style={{ cursor: 'pointer', border: 'none' }}
+                                        aria-pressed={selectedCategory === cat.id}
                                     >
                                         {cat.name}
                                     </button>
@@ -107,6 +109,7 @@ export default function QuestionsPage() {
                                     className={cn('badge', !selectedDifficulty && 'badge--info')}
                                     onClick={() => setSelectedDifficulty(null)}
                                     style={{ cursor: 'pointer', border: 'none' }}
+                                    aria-label="Показать все уровни сложности"
                                 >
                                     Все
                                 </button>
@@ -116,6 +119,7 @@ export default function QuestionsPage() {
                                         className={cn('badge', selectedDifficulty === d && getDifficultyBadgeClass(d))}
                                         onClick={() => setSelectedDifficulty(d)}
                                         style={{ cursor: 'pointer', border: 'none' }}
+                                        aria-pressed={selectedDifficulty === d}
                                     >
                                         {getDifficultyLabel(d)}
                                     </button>

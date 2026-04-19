@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { User, BarChart3, CheckCircle2, Code2, Flame, Calendar } from 'lucide-react'
+import { User, BarChart3, CheckCircle2, Code2, Flame } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate, pluralize } from '@/lib/utils'
 import type { Profile, UserProgress } from '@/types/database'
@@ -12,11 +12,7 @@ export default function ProfilePage() {
     const [progress, setProgress] = useState<UserProgress | null>(null)
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        loadProfile()
-    }, [])
-
-    async function loadProfile() {
+    const loadProfile = useCallback(async () => {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
@@ -26,7 +22,11 @@ export default function ProfilePage() {
         if (p) setProfile(p)
         if (pr) setProgress(pr)
         setLoading(false)
-    }
+    }, [])
+
+    useEffect(() => {
+        loadProfile()
+    }, [loadProfile])
 
     if (loading) {
         return <div className="page"><div className="container container--narrow"><div className="skeleton" style={{ height: 300 }} /></div></div>

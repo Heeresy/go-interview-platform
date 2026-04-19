@@ -145,6 +145,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-snap-type: y mandatory;
 }
 
 body {
@@ -513,7 +514,6 @@ textarea {
 
 /* ===== Accessibility ===== */
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -521,6 +521,43 @@ textarea {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Disable Framer Motion animations */
+  .motion-div,
+  [class*="motion-"] {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Respect reduced motion for specific components */
+@media (prefers-reduced-motion: reduce) {
+  .card:hover {
+    transform: none;
+  }
+
+  .btn:active {
+    transform: none;
+  }
+
+  .glass:hover {
+    border-color: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .hero__badge,
+  .hero__title,
+  .hero__subtitle,
+  .hero__actions {
+    opacity: 1;
+    transform: none;
+  }
+
+  .feature-card,
+  .why-card {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -875,4 +912,9 @@ textarea {
 .test-result--fail {
   background: rgba(255, 97, 136, 0.08);
   color: var(--accent-red);
+}
+
+main {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
 }

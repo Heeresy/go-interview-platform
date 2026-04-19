@@ -69,6 +69,7 @@ export default function TasksPage() {
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             style={{ paddingLeft: 44 }}
+                            aria-label="Поиск задач"
                         />
                     </div>
                     <div className="filters__row">
@@ -76,18 +77,18 @@ export default function TasksPage() {
                             <Filter size={14} />
                             <span className="text-sm text-muted">Категория:</span>
                             <div className="flex gap-2 flex-wrap">
-                                <button className={cn('badge', !selectedCategory && 'badge--info')} onClick={() => setSelectedCategory(null)} style={{ cursor: 'pointer', border: 'none' }}>Все</button>
+                                <button className={cn('badge', !selectedCategory && 'badge--info')} onClick={() => setSelectedCategory(null)} style={{ cursor: 'pointer', border: 'none' }} aria-label="Показать все категории">Все</button>
                                 {categories.map(cat => (
-                                    <button key={cat.id} className={cn('badge', selectedCategory === cat.id && 'badge--info')} onClick={() => setSelectedCategory(cat.id)} style={{ cursor: 'pointer', border: 'none' }}>{cat.name}</button>
+                                    <button key={cat.id} className={cn('badge', selectedCategory === cat.id && 'badge--info')} onClick={() => setSelectedCategory(cat.id)} style={{ cursor: 'pointer', border: 'none' }} aria-pressed={selectedCategory === cat.id}>{cat.name}</button>
                                 ))}
                             </div>
                         </div>
                         <div className="filters__group">
                             <span className="text-sm text-muted">Сложность:</span>
                             <div className="flex gap-2 flex-wrap">
-                                <button className={cn('badge', !selectedDifficulty && 'badge--info')} onClick={() => setSelectedDifficulty(null)} style={{ cursor: 'pointer', border: 'none' }}>Все</button>
+                                <button className={cn('badge', !selectedDifficulty && 'badge--info')} onClick={() => setSelectedDifficulty(null)} style={{ cursor: 'pointer', border: 'none' }} aria-label="Показать все уровни сложности">Все</button>
                                 {([1, 2, 3, 4, 5] as Difficulty[]).map(d => (
-                                    <button key={d} className={cn('badge', selectedDifficulty === d && getDifficultyBadgeClass(d))} onClick={() => setSelectedDifficulty(d)} style={{ cursor: 'pointer', border: 'none' }}>{getDifficultyLabel(d)}</button>
+                                    <button key={d} className={cn('badge', selectedDifficulty === d && getDifficultyBadgeClass(d))} onClick={() => setSelectedDifficulty(d)} style={{ cursor: 'pointer', border: 'none' }} aria-pressed={selectedDifficulty === d}>{getDifficultyLabel(d)}</button>
                                 ))}
                             </div>
                         </div>

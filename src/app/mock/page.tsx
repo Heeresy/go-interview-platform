@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Users, Star, Plus, Clock, ArrowUpDown, Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getDifficultyBadgeClass, getDifficultyLabel, formatTimeAgo, truncate } from '@/lib/utils'
-import type { MockSet, Difficulty } from '@/types/database'
+import type { MockSet } from '@/types/database'
 
 type SortBy = 'rating' | 'date'
 
@@ -17,11 +17,7 @@ export default function MockPage() {
     const [sortBy, setSortBy] = useState<SortBy>('rating')
     const [user, setUser] = useState<{ id: string } | null>(null)
 
-    useEffect(() => {
-        loadData()
-    }, [sortBy])
-
-    async function loadData() {
+    const loadData = useCallback(async () => {
         const supabase = createClient()
 
         const { data: { user: u } } = await supabase.auth.getUser()
@@ -36,7 +32,11 @@ export default function MockPage() {
 
         if (data) setSets(data)
         setLoading(false)
-    }
+    }, [sortBy])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     const filtered = sets.filter(s =>
         s.title.toLowerCase().includes(search.toLowerCase()) ||

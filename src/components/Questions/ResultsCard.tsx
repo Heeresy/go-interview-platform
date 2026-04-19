@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { CheckCircle, AlertCircle } from 'lucide-react'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 
 interface ResultsCardProps {
   score: number
@@ -17,24 +18,38 @@ export function ResultsCard({
   onNextQuestion,
 }: ResultsCardProps) {
   const isPassed = score >= 85
+  const prefersReducedMotion = useReducedMotion()
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={prefersReducedMotion ? { duration: 0 } : undefined}
       className="results-card glass rounded-lg p-6"
     >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           {isPassed ? (
             <motion.div
-              animate={{ scale: [0, 1.1, 1] }}
-              transition={{ duration: 0.5 }}
+              animate={{ scale: prefersReducedMotion ? 1 : [0, 1.1, 1] }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { duration: 0.5 }
+              }
             >
-              <CheckCircle size={32} className="text-green-500" />
+              <CheckCircle
+                size={32}
+                className="text-green-500"
+                aria-label="Success"
+              />
             </motion.div>
           ) : (
-            <AlertCircle size={32} className="text-orange-500" />
+            <AlertCircle
+              size={32}
+              className="text-orange-500"
+              aria-label="Warning"
+            />
           )}
           <div>
             <span className="text-sm text-secondary">Your Score</span>
@@ -68,14 +83,19 @@ export function ResultsCard({
         {onNextQuestion && (
           <motion.button
             onClick={onNextQuestion}
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ scale: 1.02 }}
+            whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+            whileHover={!prefersReducedMotion ? { scale: 1.02 } : {}}
             className="btn btn--primary flex-1"
           >
             Next Question →
           </motion.button>
         )}
-        <button className="btn btn--secondary flex-1">Review Later</button>
+        <button
+          className="btn btn--secondary flex-1"
+          aria-label="Review this question later"
+        >
+          Review Later
+        </button>
       </div>
     </motion.div>
   )

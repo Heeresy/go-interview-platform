@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import dynamic from 'next/dynamic'
 import {
   MessageSquareCode,
   Code2,
@@ -13,6 +14,19 @@ import {
   Shield,
   Brain,
 } from 'lucide-react'
+
+const FaultyTerminal = dynamic(() => import('@/components/FaultyTerminal'), {
+  ssr: false,
+  loading: () => <div style={{ position: 'absolute', inset: 0, background: 'var(--bg-primary)' }} />,
+})
+
+const CardSwap = dynamic(() => import('@/components/CardSwap'), {
+  ssr: false,
+})
+
+const Card = dynamic(() => import('@/components/CardSwap').then(mod => mod.Card), {
+  ssr: false,
+})
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fadeUp: any = {
@@ -73,8 +87,29 @@ const STATS = [
 export default function HomePage() {
   return (
     <div className="home">
-      {/* Hero Section */}
-      <section className="hero">
+      {/* Section 1: Hero with full background */}
+      <section className="home__section home__section--1">
+        <div className="hero__background">
+          <FaultyTerminal
+            scale={1.5}
+            gridMul={[2, 1]}
+            digitSize={1.2}
+            timeScale={0.5}
+            pause={false}
+            scanlineIntensity={0.3}
+            glitchAmount={0.9}
+            flickerAmount={0.8}
+            noiseAmp={0.8}
+            chromaticAberration={0}
+            dither={0}
+            curvature={0.05}
+            tint="#A7EF9E"
+            mouseReact={false}
+            mouseStrength={0.5}
+            pageLoadAnimation={true}
+            brightness={0.4}
+          />
+        </div>
         <div className="hero__glow" />
         <div className="container hero__container">
           <motion.div
@@ -85,8 +120,8 @@ export default function HomePage() {
               visible: { transition: { staggerChildren: 0.12 } },
             }}
           >
-            <motion.div className="hero__badge" variants={fadeUp} custom={0}>
-              <Sparkles size={14} />
+            <motion.div className="hero__badge" variants={fadeUp} custom={0} aria-label="Бесплатная AI-платформа">
+              <Sparkles size={14} aria-hidden="true" />
               Бесплатная AI-платформа
             </motion.div>
             <motion.h1 className="hero__title" variants={fadeUp} custom={1}>
@@ -117,7 +152,7 @@ export default function HomePage() {
             transition={{ delay: 0.6, duration: 0.5 }}
           >
             {STATS.map((stat) => (
-              <div key={stat.label} className="hero__stat">
+              <div key={stat.label} className="hero__stat" aria-label={`${stat.value} ${stat.label}`}>
                 <div className="hero__stat-value">{stat.value}</div>
                 <div className="hero__stat-label">{stat.label}</div>
               </div>
@@ -126,8 +161,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="features">
+      {/* Section 2: Features */}
+      <section className="home__section home__section--2">
         <div className="container">
           <motion.div
             className="features__header"
@@ -173,49 +208,97 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Why Section */}
-      <section className="why">
-        <div className="container">
-          <motion.div
-            className="why__grid"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-          >
-            <motion.div className="why-card glass" variants={fadeUp} custom={0}>
-              <div className="why-card__icon-wrapper" style={{ color: 'var(--accent-purple)' }}>
-                <Brain size={32} />
-              </div>
-              <h3>AI-оценка</h3>
-              <p>Нейросеть анализирует ваш ответ и даёт подробную обратную связь, как настоящий интервьюер</p>
-            </motion.div>
-            <motion.div className="why-card glass" variants={fadeUp} custom={1}>
-              <div className="why-card__icon-wrapper" style={{ color: 'var(--accent-yellow)' }}>
-                <Zap size={32} />
-              </div>
-              <h3>Запуск кода</h3>
-              <p>Пишите и запускайте Go-код прямо в браузере с настоящими тестами и проверкой</p>
-            </motion.div>
-            <motion.div className="why-card glass" variants={fadeUp} custom={2}>
-              <div className="why-card__icon-wrapper" style={{ color: 'var(--accent-green)' }}>
-                <Shield size={32} />
-              </div>
-              <h3>100% бесплатно</h3>
-              <p>Все функции доступны бесплатно. Без подписок, без ограничений, без подвоха</p>
-            </motion.div>
-          </motion.div>
+      {/* Section 3: Why with CardSwap */}
+      <section className="home__section home__section--3">
+        <div className="container" style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <div style={{ flex: '0 0 40%', zIndex: 10 }}>
+            <h2 style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 800, marginBottom: 'var(--space-4)' }}>
+              Почему мы лучше?
+            </h2>
+            <p style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-secondary)', margin: 0 }}>
+              Три основные преимущества нашей платформы
+            </p>
+          </div>
+          <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <CardSwap
+              width={500}
+              height={400}
+              cardDistance={60}
+              verticalDistance={70}
+              delay={4000}
+              pauseOnHover={true}
+              easing="elastic"
+            >
+              <Card>
+                <div style={{ color: 'var(--accent-purple)', marginBottom: 'var(--space-4)' }}>
+                  <Brain size={48} />
+                </div>
+                <h3>AI-оценка</h3>
+                <p>Нейросеть анализирует ваш ответ и даёт подробную обратную связь, как настоящий интервьюер</p>
+              </Card>
+              <Card>
+                <div style={{ color: 'var(--accent-yellow)', marginBottom: 'var(--space-4)' }}>
+                  <Zap size={48} />
+                </div>
+                <h3>Запуск кода</h3>
+                <p>Пишите и запускайте Go-код прямо в браузере с настоящими тестами и проверкой</p>
+              </Card>
+              <Card>
+                <div style={{ color: 'var(--accent-green)', marginBottom: 'var(--space-4)' }}>
+                  <Shield size={48} />
+                </div>
+                <h3>100% бесплатно</h3>
+                <p>Все функции доступны бесплатно. Без подписок, без ограничений, без подвоха</p>
+              </Card>
+            </CardSwap>
+          </div>
         </div>
       </section>
 
       <style jsx>{`
         .home {
           overflow-x: hidden;
+          scroll-snap-type: y mandatory;
+          scroll-behavior: smooth;
+          height: 100vh;
+          overflow-y: scroll;
         }
-        /* === Hero === */
-        .hero {
+
+        /* === FULL SCREEN SECTIONS === */
+        .home__section {
+          width: 100%;
+          min-height: 100vh;
+          scroll-snap-align: start;
+          scroll-snap-stop: always;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           position: relative;
-          padding: var(--space-20) 0 var(--space-16);
+        }
+
+        .home__section--1 {
+          padding: 0;
+          min-height: 100vh;
+        }
+
+        .home__section--2 {
+          min-height: 100vh;
+          padding: var(--space-8) 0;
+        }
+
+        .home__section--3 {
+          min-height: 100vh;
+          padding: var(--space-8) 0;
+        }
+
+        /* === Hero (Section 1) === */
+        .hero__background {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1;
+          pointer-events: none;
         }
         .hero__glow {
           position: absolute;
@@ -231,18 +314,35 @@ export default function HomePage() {
             transparent 70%
           );
           pointer-events: none;
+          z-index: 2;
         }
         .hero__container {
           position: relative;
           text-align: center;
+          z-index: 3;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          width: 100%;
+          padding: var(--space-8);
+          color: #EDEDED;
+        }
+        .hero__content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
         .hero__badge {
           display: inline-flex;
           align-items: center;
           gap: var(--space-2);
           padding: var(--space-2) var(--space-4);
-          background: var(--color-primary-muted);
-          color: var(--color-primary);
+          background: rgba(62, 207, 142, 0.2);
+          color: #3ECF8E !important;
           border-radius: var(--radius-full);
           font-size: var(--font-size-sm);
           font-weight: 600;
@@ -254,16 +354,18 @@ export default function HomePage() {
           line-height: 1.15;
           letter-spacing: -0.03em;
           margin-bottom: var(--space-6);
+          max-width: 900px;
+          color: #EDEDED !important;
         }
         .hero__title-accent {
-          background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+          background: linear-gradient(135deg, #facc15, #fb923c);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
         }
         .hero__subtitle {
           font-size: var(--font-size-lg);
-          color: var(--text-secondary);
+          color: #A1A1AA !important;
           max-width: 600px;
           margin: 0 auto var(--space-8);
           line-height: var(--line-height-relaxed);
@@ -273,6 +375,15 @@ export default function HomePage() {
           gap: var(--space-4);
           justify-content: center;
           flex-wrap: wrap;
+          margin-bottom: auto;
+        }
+        .hero__actions .btn--secondary {
+          color: #EDEDED !important;
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+        .hero__actions .btn--secondary:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.3);
         }
         .hero__stats {
           display: flex;
@@ -281,6 +392,7 @@ export default function HomePage() {
           margin-top: var(--space-16);
           padding-top: var(--space-8);
           border-top: 1px solid var(--border-color);
+          width: 100%;
         }
         .hero__stat {
           text-align: center;
@@ -288,26 +400,40 @@ export default function HomePage() {
         .hero__stat-value {
           font-size: var(--font-size-3xl);
           font-weight: 800;
-          color: var(--color-primary);
+          color: #3ECF8E !important;
         }
         .hero__stat-label {
           font-size: var(--font-size-sm);
-          color: var(--text-muted);
+          color: #A1A1AA !important;
           margin-top: var(--space-1);
         }
 
-        /* === Features === */
-        .features {
-          padding: var(--space-20) 0;
+        /* === Features (Section 2) === */
+        .home__section--2 {
+          height: 100vh;
+          padding: 0;
         }
+
+        .home__section--2 .container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          height: 100%;
+          width: 100%;
+          padding: 5vh var(--space-6) 0;
+          box-sizing: border-box;
+        }
+
         .features__header {
           text-align: center;
-          margin-bottom: var(--space-12);
+          margin-bottom: var(--space-8);
         }
         .features__title {
           font-size: var(--font-size-3xl);
           font-weight: 800;
           letter-spacing: -0.02em;
+          margin-top: 0;
         }
         .features__subtitle {
           font-size: var(--font-size-lg);
@@ -316,8 +442,34 @@ export default function HomePage() {
         }
         .features__grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: var(--space-6);
+          width: 100%;
+          max-width: 1200px;
+          margin: 0 auto;
+          justify-content: center;
+          padding: 0 var(--space-6);
+          box-sizing: border-box;
+        }
+
+        .features__grid-item {
+          display: flex;
+          width: 100%;
+          min-width: 0;
+        }
+
+        @media (max-width: 1400px) {
+          .features__grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            max-width: 800px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .features__grid {
+            grid-template-columns: 1fr;
+            max-width: 400px;
+          }
         }
         .feature-card {
           display: flex;
@@ -361,14 +513,38 @@ export default function HomePage() {
           color: var(--color-primary);
         }
 
-        /* === Why === */
-        .why {
-          padding: var(--space-8) 0 var(--space-20);
+        /* === Why (Section 3) === */
+        .home__section--3 .container {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          min-height: 100%;
+          width: 100%;
+          position: relative;
+          gap: var(--space-16);
+          padding: var(--space-12) var(--space-20);
         }
+
+        .home__section--3 .container > div:first-child {
+          flex: 0 0 40%;
+          text-align: left;
+          z-index: 10;
+        }
+
+        .home__section--3 .container > div:first-child h2 {
+          margin: 0 0 var(--space-4) 0;
+        }
+
+        .home__section--3 .container > div:first-child p {
+          margin: 0;
+        }
+
         .why__grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           gap: var(--space-6);
+          width: 100%;
         }
         .why-card {
           padding: var(--space-8);
@@ -391,9 +567,18 @@ export default function HomePage() {
         }
 
         @media (max-width: 768px) {
-          .hero {
-            padding: var(--space-12) 0 var(--space-10);
+          .home {
+            scroll-snap-type: y mandatory;
           }
+
+          .home__section {
+            min-height: 100vh;
+          }
+
+          .hero__title {
+            font-size: var(--font-size-3xl);
+          }
+
           .hero__stats {
             gap: var(--space-6);
             flex-wrap: wrap;

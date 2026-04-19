@@ -27,7 +27,7 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string } | null>(null)
+  const [user, setUser] = useState<{ id: string; email?: string; avatar_url?: string; display_name?: string } | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
@@ -39,6 +39,7 @@ export default function Navbar() {
           id: data.user.id,
           email: data.user.email,
           avatar_url: data.user.user_metadata?.avatar_url,
+          display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
         })
       }
     })
@@ -77,7 +78,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop navigation */}
-        <div className="navbar__links">
+        <nav className="navbar__links" aria-label="Основная навигация">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
@@ -86,12 +87,13 @@ export default function Navbar() {
                 'navbar__link',
                 pathname.startsWith(href) && 'navbar__link--active'
               )}
+              aria-current={pathname.startsWith(href) ? 'page' : undefined}
             >
-              <Icon size={18} />
-              {label}
+              <Icon size={18} aria-hidden="true" />
+              <span>{label}</span>
             </Link>
           ))}
-        </div>
+        </nav>
 
         {/* Actions */}
         <div className="navbar__actions">
@@ -107,9 +109,9 @@ export default function Navbar() {
             <div className="navbar__user-menu">
               <Link href="/profile" className="navbar__avatar-link">
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="navbar__avatar" />
+                  <img src={user.avatar_url} alt={user.display_name || 'Аватар пользователя'} className="navbar__avatar" />
                 ) : (
-                  <div className="navbar__avatar navbar__avatar--placeholder">
+                  <div className="navbar__avatar navbar__avatar--placeholder" aria-hidden="true">
                     <User size={16} />
                   </div>
                 )}
@@ -138,7 +140,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="navbar__mobile">
+        <nav className="navbar__mobile" aria-label="Мобильная навигация">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
@@ -148,12 +150,13 @@ export default function Navbar() {
                 pathname.startsWith(href) && 'navbar__mobile-link--active'
               )}
               onClick={() => setMobileOpen(false)}
+              aria-current={pathname.startsWith(href) ? 'page' : undefined}
             >
-              <Icon size={20} />
-              {label}
+              <Icon size={20} aria-hidden="true" />
+              <span>{label}</span>
             </Link>
           ))}
-        </div>
+        </nav>
       )}
 
       <style jsx>{`

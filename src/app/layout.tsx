@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Navbar from '@/components/layout/Navbar'
 import AIAssistant from '@/components/AIAssistant'
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: 'GOPrep — Платформа подготовки к собеседованиям на Go',
@@ -21,6 +23,8 @@ export default function RootLayout({
         <Navbar />
         <main>{children}</main>
         <AIAssistant />
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   )
