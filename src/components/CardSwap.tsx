@@ -5,7 +5,7 @@ import gsap from 'gsap'
 import './CardSwap.css'
 
 export const Card = forwardRef(({ customClass, ...rest }: any, ref: any) => (
-  <div ref={ref} {...rest} className={`card ${customClass ?? ''} ${rest.className ?? ''}`.trim()} />
+  <div ref={ref} {...rest} className={`card-swap-card ${customClass ?? ''} ${rest.className ?? ''}`.trim()} />
 ))
 Card.displayName = 'Card'
 
@@ -57,21 +57,21 @@ const CardSwap = ({
   const config =
     easing === 'elastic'
       ? {
-          ease: 'elastic.out(0.6,0.9)',
-          durDrop: 2,
-          durMove: 2,
-          durReturn: 2,
-          promoteOverlap: 0.9,
-          returnDelay: 0.05,
-        }
+        ease: 'elastic.out(0.6,0.9)',
+        durDrop: 2,
+        durMove: 2,
+        durReturn: 2,
+        promoteOverlap: 0.9,
+        returnDelay: 0.05,
+      }
       : {
-          ease: 'power1.inOut',
-          durDrop: 0.8,
-          durMove: 0.8,
-          durReturn: 0.8,
-          promoteOverlap: 0.45,
-          returnDelay: 0.2,
-        }
+        ease: 'power1.inOut',
+        durDrop: 0.8,
+        durMove: 0.8,
+        durReturn: 0.8,
+        promoteOverlap: 0.45,
+        returnDelay: 0.2,
+      }
 
   const childArr = useMemo(() => Children.toArray(children), [children])
   const refs = useMemo(
@@ -178,14 +178,14 @@ const CardSwap = ({
   const rendered = childArr.map((child, i) =>
     isValidElement(child)
       ? cloneElement(child, {
-          key: i,
-          ref: refs[i],
-          style: { width, height, ...((child.props as any).style ?? {}) },
-          onClick: (e: any) => {
-            (child.props as any).onClick?.(e)
-            onCardClick?.(i)
-          },
-        } as any)
+        key: i,
+        ref: refs[i],
+        style: { width, height, ...((child.props as any).style ?? {}) },
+        onClick: (e: any) => {
+          (child.props as any).onClick?.(e)
+          onCardClick?.(i)
+        },
+      } as any)
       : child
   )
 
