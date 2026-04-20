@@ -176,11 +176,28 @@ export default function QuestionsPage() {
             </div>
 
             <style jsx>{`
+        .page {
+          padding-top: var(--space-20); /* Increased padding to clear fixed navbar */
+        }
+        .container {
+          padding-top: var(--space-8);
+        }
         .filters {
           padding: var(--space-6);
           display: flex;
           flex-direction: column;
           gap: var(--space-4);
+          margin-bottom: var(--space-8);
+        }
+        .grid--2 {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+          gap: var(--space-8); /* Increased gap for better breathing room */
+        }
+        @media (max-width: 768px) {
+          .grid--2 {
+            grid-template-columns: 1fr;
+          }
         }
         .filters__search {
           position: relative;
@@ -212,6 +229,10 @@ export default function QuestionsPage() {
           display: flex;
           flex-direction: column;
           height: 100%;
+          min-height: 180px; /* Ensure consistent card height */
+        }
+        .card__body:empty {
+           display: none;
         }
       `}</style>
         </div>

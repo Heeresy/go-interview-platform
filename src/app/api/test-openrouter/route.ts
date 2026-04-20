@@ -26,7 +26,7 @@ export async function GET() {
         'X-Title': 'GO Interview Platform Test',
       },
       body: JSON.stringify({
-        model: 'google/gemma-4-31b-it:free',
+        model: 'google/gemma-4-31b-it-20260402:free',
         messages: [{ role: 'user', content: 'Say "Hello from OpenRouter" in Russian' }],
         max_tokens: 100,
       }),

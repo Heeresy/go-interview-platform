@@ -5,7 +5,8 @@ const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 // Available models on OpenRouter
 // Note: Some :free suffixed models may still work
 const AVAILABLE_MODELS = [
-  'google/gemma-4-31b-it:free', // User suggested model - trying first
+  'google/gemma-4-31b-it-20260402:free', // Working free model
+  'nvidia/llama-3.1-nemotron-70b-instruct:free',
   'meta-llama/llama-3.1-8b-instruct',
   'google/gemma-2-9b-it',
   'mistralai/mistral-7b-instruct',
