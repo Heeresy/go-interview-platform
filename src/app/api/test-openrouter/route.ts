@@ -20,16 +20,14 @@ export async function GET() {
     const response = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
         'X-Title': 'GO Interview Platform Test',
       },
       body: JSON.stringify({
-        model: 'mistralai/mistral-7b-instruct:free',
-        messages: [
-          { role: 'user', content: 'Say "Hello from OpenRouter" in Russian' }
-        ],
+        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        messages: [{ role: 'user', content: 'Say "Hello from OpenRouter" in Russian' }],
         max_tokens: 100,
       }),
     })

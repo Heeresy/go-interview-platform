@@ -3,10 +3,11 @@ import type { AIChatMessage } from '@/types/database'
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 // Free models available on OpenRouter
+// Updated: mistralai/mistral-7b-instruct:free is no longer available (404)
 const FREE_MODELS = [
-  'mistralai/mistral-7b-instruct:free',
-  'google/gemma-2-9b-it:free',
   'meta-llama/llama-3.1-8b-instruct:free',
+  'google/gemma-2-9b-it:free',
+  'mistralai/mistral-7b-instruct:free', // fallback, may not work
 ]
 
 // Timeout in milliseconds
@@ -100,49 +101,65 @@ export async function chatCompletion(
     temperature?: number
   }
 ) {
-  const model = options?.model || FREE_MODELS[0]
-
-  console.log('[OpenRouter] Sending request with model:', model)
-  console.log('[OpenRouter] Messages count:', messages.length)
-
   // Check if API key is configured
   if (!process.env.OPENROUTER_API_KEY) {
     console.error('[OpenRouter] API key is not configured')
     throw new Error('OpenRouter API key is not configured')
   }
 
-  try {
-    const response = await fetchWithRetry(OPENROUTER_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-        'X-Title': 'GO Interview Platform',
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens: options?.maxTokens || 1024,
-        temperature: options?.temperature ?? 0.3,
-      }),
-    })
+  console.log('[OpenRouter] Messages count:', messages.length)
 
-    console.log('[OpenRouter] Response status:', response.status)
+  // Try models in order until one works
+  const modelsToTry = options?.model ? [options.model] : FREE_MODELS
 
-    const data = await response.json()
-    console.log('[OpenRouter] Response received, choices:', data.choices?.length)
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i]
+    console.log(`[OpenRouter] Trying model ${i + 1}/${modelsToTry.length}: ${model}`)
 
-    if (!data.choices || data.choices.length === 0) {
-      console.error('[OpenRouter] No choices in response:', data)
-      throw new Error('Empty response from AI')
+    try {
+      const response = await fetchWithRetry(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+          'X-Title': 'GO Interview Platform',
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: options?.maxTokens || 1024,
+          temperature: options?.temperature ?? 0.3,
+        }),
+      })
+
+      console.log('[OpenRouter] Response status:', response.status)
+
+      const data = await response.json()
+      console.log('[OpenRouter] Response received, choices:', data.choices?.length)
+
+      if (!data.choices || data.choices.length === 0) {
+        console.error('[OpenRouter] No choices in response:', data)
+        throw new Error('Empty response from AI')
+      }
+
+      return data.choices[0]?.message?.content || ''
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[OpenRouter] Model ${model} failed:`, errorMsg)
+
+      // If this is the last model, throw the error
+      if (i === modelsToTry.length - 1) {
+        console.error('[OpenRouter] All models failed')
+        throw error
+      }
+
+      // Otherwise try next model
+      console.log('[OpenRouter] Trying next model...')
     }
-
-    return data.choices[0]?.message?.content || ''
-  } catch (error) {
-    console.error('[OpenRouter] Failed after all retries:', error)
-    throw error
   }
+
+  throw new Error('All models failed')
 }
 
 export async function evaluateAnswer(
