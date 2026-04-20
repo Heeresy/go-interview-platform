@@ -2,12 +2,15 @@ import type { AIChatMessage } from '@/types/database'
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
-// Free models available on OpenRouter
-// Updated: mistralai/mistral-7b-instruct:free is no longer available (404)
-const FREE_MODELS = [
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'google/gemma-2-9b-it:free',
-  'mistralai/mistral-7b-instruct:free', // fallback, may not work
+// Available models on OpenRouter
+// Note: Some :free suffixed models may still work
+const AVAILABLE_MODELS = [
+  'google/gemma-4-31b-it:free', // User suggested model - trying first
+  'meta-llama/llama-3.1-8b-instruct',
+  'google/gemma-2-9b-it',
+  'mistralai/mistral-7b-instruct',
+  'openchat/openchat-7b',
+  'huggingfaceh4/zephyr-7b-beta',
 ]
 
 // Timeout in milliseconds
@@ -110,7 +113,7 @@ export async function chatCompletion(
   console.log('[OpenRouter] Messages count:', messages.length)
 
   // Try models in order until one works
-  const modelsToTry = options?.model ? [options.model] : FREE_MODELS
+  const modelsToTry = options?.model ? [options.model] : AVAILABLE_MODELS
 
   for (let i = 0; i < modelsToTry.length; i++) {
     const model = modelsToTry[i]
