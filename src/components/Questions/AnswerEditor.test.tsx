@@ -5,8 +5,8 @@ import { AnswerEditor } from '@/components/Questions/AnswerEditor'
 
 describe('AnswerEditor', () => {
   it('renders with proper labels and aria attributes', () => {
-    const mockSubmit = async () => {}
-    render(<AnswerEditor questionId="q1" onSubmit={mockSubmit} />)
+    const mockSubmit = async () => { }
+    render(<AnswerEditor onSubmit={mockSubmit} />)
 
     const textarea = screen.getByLabelText('Answer textarea')
     expect(textarea).toBeInTheDocument()
@@ -14,8 +14,8 @@ describe('AnswerEditor', () => {
   })
 
   it('disables submit button when answer is empty', () => {
-    const mockSubmit = async () => {}
-    render(<AnswerEditor questionId="q1" onSubmit={mockSubmit} />)
+    const mockSubmit = async () => { }
+    render(<AnswerEditor onSubmit={mockSubmit} />)
 
     const button = screen.getByRole('button', { name: /submit answer/i })
     expect(button).toBeDisabled()
@@ -23,8 +23,8 @@ describe('AnswerEditor', () => {
 
   it('enables submit button when answer has text', async () => {
     const user = userEvent.setup()
-    const mockSubmit = async () => {}
-    render(<AnswerEditor questionId="q1" onSubmit={mockSubmit} />)
+    const mockSubmit = async () => { }
+    render(<AnswerEditor onSubmit={mockSubmit} />)
 
     const textarea = screen.getByLabelText('Answer textarea')
     await user.type(textarea, 'My answer')
@@ -34,9 +34,8 @@ describe('AnswerEditor', () => {
   })
 
   it('shows error when answer is empty on submit', async () => {
-    const user = userEvent.setup()
-    const mockSubmit = async () => {}
-    render(<AnswerEditor questionId="q1" onSubmit={mockSubmit} />)
+    const mockSubmit = async () => { }
+    render(<AnswerEditor onSubmit={mockSubmit} />)
 
     const button = screen.getByRole('button', { name: /submit answer/i })
     // Try to click but it's disabled, so we can't directly test it
@@ -47,9 +46,9 @@ describe('AnswerEditor', () => {
 
   it('clears answer after successful submission', async () => {
     const user = userEvent.setup()
-    const mockSubmit = async () => {}
-    const { rerender } = render(
-      <AnswerEditor questionId="q1" onSubmit={mockSubmit} />
+    const mockSubmit = async () => { }
+    render(
+      <AnswerEditor onSubmit={mockSubmit} />
     )
 
     const textarea = screen.getByLabelText('Answer textarea') as HTMLTextAreaElement
@@ -60,7 +59,7 @@ describe('AnswerEditor', () => {
 
   it('supports Ctrl+Enter keyboard shortcut', async () => {
     const user = userEvent.setup()
-    const mockSubmit = async () => {}
+    const mockSubmit = async () => { }
     render(<AnswerEditor questionId="q1" onSubmit={mockSubmit} />)
 
     const textarea = screen.getByLabelText('Answer textarea')

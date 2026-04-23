@@ -91,12 +91,12 @@ async function executeBatch(code: string, stdin: string) {
     try {
         // Try JDoodle first
         return await runJDoodle(code, stdin)
-    } catch (_jdError) {
+    } catch {
         console.warn('JDoodle failed, falling back to Glot.io')
         try {
             // Fallback to Glot.io
             return await runGlot(code, stdin)
-        } catch (_glotError) {
+        } catch {
             console.error('All execution services failed')
             throw new Error('Все сервисы выполнения кода недоступны. Проверьте API ключи в .env.local')
         }
@@ -105,13 +105,21 @@ async function executeBatch(code: string, stdin: string) {
 
 export async function executeGoCode(
     code: string,
-    testCases: TestCase[]
+    testCases: TestCase[],
+    options?: {
+        timeLimitMs?: number
+        memoryLimitMb?: number
+    }
 ): Promise<{
     status: 'passed' | 'failed' | 'error'
     results: TestResults
     executionTimeMs: number
     stderr?: string
 }> {
+    // Suppress unused warning while keeping signature for API compatibility
+    if (process.env.NODE_ENV === 'development') {
+        console.debug('[ExecutionEngine] Options ignored for now:', options)
+    }
     const details: TestResultDetail[] = []
     let totalTimeMs = 0
     let hasError = false

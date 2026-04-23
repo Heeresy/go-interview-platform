@@ -185,7 +185,7 @@ const CardSwap = ({
       ? cloneElement(child, {
         key: i,
         ref: refs[i],
-        style: { width, height, ...((child.props as any).style ?? {}) },
+        style: { width, height, ...((child.props as { style?: React.CSSProperties }).style ?? {}) },
         onClick: (e: React.MouseEvent) => {
           const childProps = child.props as { onClick?: (e: React.MouseEvent) => void }
           childProps.onClick?.(e)

@@ -41,3 +41,12 @@ yarn-error.log*
 next-env.d.ts
 # Added by code-review-graph
 .code-review-graph/
+
+# logs and build output
+*.txt
+*.log
+build_output
+
+# IDEs
+.vscode/
+.idea/

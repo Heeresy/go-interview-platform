@@ -1,7 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { motion, useMotionTemplate, useMotionValue } from 'framer-motion'
+import { useMotionTemplate, useMotionValue } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface AuraCardProps {
@@ -27,7 +26,7 @@ export function AuraCard({ children, className }: AuraCardProps) {
                 className
             )}
             style={{
-                // @ts-ignore
+                // @ts-expect-error - CSS variables are not yet in React style types
                 '--x': useMotionTemplate`${mouseX}px`,
                 '--y': useMotionTemplate`${mouseY}px`,
             }}

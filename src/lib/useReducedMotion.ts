@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { Variants, Transition } from 'framer-motion'
 
 /**
  * Hook to check if user prefers reduced motion
@@ -30,8 +31,8 @@ export function useReducedMotion(): boolean {
  */
 export function getAnimationVariants(
   prefersReducedMotion: boolean,
-  normalVariants: any,
-  reducedVariants?: any
+  normalVariants: Variants,
+  reducedVariants?: Variants
 ) {
   if (prefersReducedMotion && reducedVariants) {
     return reducedVariants
@@ -44,8 +45,8 @@ export function getAnimationVariants(
  */
 export function getTransition(
   prefersReducedMotion: boolean,
-  normalTransition: any,
-  reducedTransition?: any
+  normalTransition: Transition,
+  reducedTransition?: Transition
 ) {
   if (prefersReducedMotion) {
     return reducedTransition || { duration: 0 }

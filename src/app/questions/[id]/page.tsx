@@ -6,7 +6,6 @@ import { ArrowLeft, Lightbulb, Send, Loader2, CheckCircle2, XCircle, Bot, Eye, E
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getDifficultyBadgeClass, getDifficultyLabel } from '@/lib/utils'
-import { trackQuestionAnswered } from '@/lib/analytics'
 import { AuraCard } from '@/components/ui/AuraCard'
 import type { Question } from '@/types/database'
 import MarkdownContent from '@/components/ui/MarkdownContent'
@@ -33,7 +32,11 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
     }, [id])
 
     useEffect(() => {
-        loadQuestion()
+        const init = async () => {
+            await Promise.resolve()
+            loadQuestion()
+        }
+        init()
     }, [id, loadQuestion])
 
     async function handleSubmit() {

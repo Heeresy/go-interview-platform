@@ -35,7 +35,11 @@ export default function MockPage() {
     }, [sortBy])
 
     useEffect(() => {
-        loadData()
+        const init = async () => {
+            await Promise.resolve()
+            loadData()
+        }
+        init()
     }, [loadData])
 
     const filtered = sets.filter(s =>

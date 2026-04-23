@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
@@ -39,8 +40,9 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchStatus = useCallback(async () => {
-    setLoading(true)
+  const fetchStatus = useCallback(async (isManual = false) => {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    if (isManual) setLoading(true)
     setError(null)
     try {
       const res = await fetch('/api/health', { cache: 'no-store' })
@@ -55,7 +57,11 @@ export default function StatusPage() {
   }, [])
 
   useEffect(() => {
-    fetchStatus()
+    const init = async () => {
+      await Promise.resolve()
+      fetchStatus()
+    }
+    init()
     const interval = setInterval(fetchStatus, 30000)
     return () => clearInterval(interval)
   }, [fetchStatus])
@@ -160,7 +166,7 @@ export default function StatusPage() {
               </div>
               <button
                 className="btn btn--secondary btn--sm"
-                onClick={fetchStatus}
+                onClick={() => fetchStatus(true)}
                 style={{ marginTop: '16px' }}
               >
                 <RefreshCw size={14} />
@@ -196,7 +202,7 @@ export default function StatusPage() {
                 </div>
                 <div className="card__footer">
                   {!status.checks.gemini.configured ? (
-                    <a
+                    <Link
                       href="https://aistudio.google.com/app/apikey"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -205,7 +211,7 @@ export default function StatusPage() {
                     >
                       Получить API ключ
                       <ExternalLink size={14} />
-                    </a>
+                    </Link>
                   ) : (
                     <span className="text-sm text-muted flex items-center gap-1">
                       <CheckCircle2 size={14} style={{ color: 'var(--accent-green)' }} />
@@ -349,10 +355,10 @@ export default function StatusPage() {
                 сообщение, чтобы проверить работу Google Gemini API.
               </p>
               <div className="flex gap-3">
-                <a href="/" className="btn btn--secondary">
+                <Link href="/" className="btn btn--secondary">
                   На главную
-                </a>
-                <button className="btn btn--primary" onClick={fetchStatus}>
+                </Link>
+                <button className="btn btn--primary" onClick={() => fetchStatus(true)}>
                   <RefreshCw size={14} />
                   Обновить статус
                 </button>

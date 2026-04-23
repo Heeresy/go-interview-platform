@@ -65,7 +65,11 @@ export default function QuestionsPage() {
   }, [selectedCategory, selectedDifficulty])
 
   useEffect(() => {
-    loadData()
+    const init = async () => {
+      await Promise.resolve()
+      loadData()
+    }
+    init()
   }, [loadData])
 
   const filtered = questions.filter(

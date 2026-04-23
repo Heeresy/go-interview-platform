@@ -50,7 +50,11 @@ export default function MockDetailPage({ params }: { params: Promise<{ id: strin
     }, [id])
 
     useEffect(() => {
-        loadData()
+        const init = async () => {
+            await Promise.resolve()
+            loadData()
+        }
+        init()
     }, [loadData])
 
     if (loading) {

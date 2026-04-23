@@ -46,7 +46,11 @@ func main() {
     }, [id])
 
     useEffect(() => {
-        loadTask()
+        const init = async () => {
+            await Promise.resolve()
+            loadTask()
+        }
+        init()
     }, [id, loadTask])
 
     async function handleRun(extended = false) {

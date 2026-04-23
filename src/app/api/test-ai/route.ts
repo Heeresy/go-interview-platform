@@ -9,7 +9,7 @@ export async function GET() {
             apiKeyLength: process.env.GOOGLE_AI_API_KEY?.length || 0,
             apiKeyPrefix: process.env.GOOGLE_AI_API_KEY?.substring(0, 8) + '...' || 'none',
         },
-        tests: [] as any[],
+        tests: [] as Array<{ name: string; success: boolean; content?: string; error?: string }>,
     }
 
     // Test 1: Simple Gemini call via our library

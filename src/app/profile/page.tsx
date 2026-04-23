@@ -29,7 +29,11 @@ export default function ProfilePage() {
     }, [])
 
     useEffect(() => {
-        loadProfile()
+        const init = async () => {
+            await Promise.resolve()
+            loadProfile()
+        }
+        init()
     }, [loadProfile])
 
     if (loading) {

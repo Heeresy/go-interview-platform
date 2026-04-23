@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { trackEvent, trackQuestionAnswered } from '@/lib/analytics'
 
 // Mock fetch
@@ -10,7 +11,7 @@ describe('Analytics', () => {
   })
 
   it('trackEvent should send POST request to analytics endpoint', async () => {
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ; (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
     })
@@ -25,7 +26,7 @@ describe('Analytics', () => {
   })
 
   it('trackQuestionAnswered should track question answer event', async () => {
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ; (global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
     })
@@ -45,8 +46,8 @@ describe('Analytics', () => {
   })
 
   it('trackEvent should handle errors gracefully', async () => {
-    ;(global.fetch as any).mockRejectedValueOnce(new Error('Network error'))
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    ; (global.fetch as any).mockRejectedValueOnce(new Error('Network error'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
 
     await trackEvent('test_event')
 

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { evaluateAnswer } from "@/lib/ai"
-import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request) {
     try {

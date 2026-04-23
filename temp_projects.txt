@@ -1,6 +1,0 @@
-
-  
-   LINKED | ORG ID               | REFERENCE ID         | NAME             | REGION            | CREATED AT (UTC)    
-  --------|----------------------|----------------------|------------------|-------------------|---------------------
-          | cawslzlkmmbqlrstnxxj | irrunvepjcjgjmdwbxwd | dnd-platform-dev | West EU (Ireland) | 2026-02-13 16:59:45 
-

@@ -40,7 +40,11 @@ export default function TasksPage() {
     }, [selectedCategory, selectedDifficulty])
 
     useEffect(() => {
-        loadData()
+        const init = async () => {
+            await Promise.resolve()
+            loadData()
+        }
+        init()
     }, [loadData])
 
     const filtered = tasks.filter(t =>

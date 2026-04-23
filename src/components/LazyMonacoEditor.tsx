@@ -1,5 +1,4 @@
 import dynamic from 'next/dynamic'
-import { ReactNode } from 'react'
 
 /**
  * Lazy loaded Monaco Editor component
@@ -23,7 +22,7 @@ export interface LazyMonacoEditorProps {
   language?: string
   height?: string | number
   theme?: string
-  options?: any
+  options?: Record<string, unknown>
   readOnly?: boolean
   className?: string
 }

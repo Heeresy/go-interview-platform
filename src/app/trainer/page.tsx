@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { GraduationCap, ArrowRight, CheckCircle2, XCircle, Trophy, Flame, BarChart3, Loader2 } from 'lucide-react'

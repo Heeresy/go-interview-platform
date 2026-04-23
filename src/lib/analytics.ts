@@ -5,7 +5,7 @@
 
 export const trackEvent = async (
   eventName: string,
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 ) => {
   if (typeof window === "undefined") return
 

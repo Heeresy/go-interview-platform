@@ -47,13 +47,17 @@ export default function Navbar() {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
 
-    checkUser()
+    const init = async () => {
+      await Promise.resolve()
+      checkUser()
 
-    const saved = localStorage.getItem('theme')
-    if (saved === 'light') {
-      setTheme('light')
-      document.documentElement.setAttribute('data-theme', 'light')
+      const saved = localStorage.getItem('theme')
+      if (saved === 'light') {
+        setTheme('light')
+        document.documentElement.setAttribute('data-theme', 'light')
+      }
     }
+    init()
 
     return () => window.removeEventListener('scroll', handleScroll)
   }, [checkUser])

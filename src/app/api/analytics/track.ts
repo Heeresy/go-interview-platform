@@ -1,9 +1,8 @@
-import { createClient } from "@/lib/supabase/server"
 
 interface AnalyticsEvent {
   eventName: string
   userId?: string
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 }
 
 export async function POST(request: Request) {
@@ -30,4 +29,3 @@ export async function POST(request: Request) {
     return Response.json({ error: "Failed to track event" }, { status: 500 })
   }
 }
-

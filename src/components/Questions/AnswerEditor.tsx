@@ -5,11 +5,10 @@ import { motion } from 'framer-motion'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 
 interface AnswerEditorProps {
-  questionId: string
   onSubmit: (answer: string) => Promise<void>
 }
 
-export function AnswerEditor({ questionId, onSubmit }: AnswerEditorProps) {
+export function AnswerEditor({ onSubmit }: AnswerEditorProps) {
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
