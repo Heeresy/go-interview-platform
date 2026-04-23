@@ -5,12 +5,13 @@ import { useEffect, useState } from 'react'
  * Useful for disabling animations based on user accessibility preferences
  */
 export function useReducedMotion(): boolean {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  })
 
   useEffect(() => {
-    // Check initial preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setPrefersReducedMotion(mediaQuery.matches)
 
     // Listen for changes
     const handleChange = (e: MediaQueryListEvent) => {

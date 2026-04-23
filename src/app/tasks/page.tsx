@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Search, Filter, Code2, ChevronRight, Clock, MemoryStick } from 'lucide-react'
@@ -16,11 +16,7 @@ export default function TasksPage() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
     const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null)
 
-    useEffect(() => {
-        loadData()
-    }, [selectedCategory, selectedDifficulty])
-
-    async function loadData() {
+    const loadData = useCallback(async () => {
         const supabase = createClient()
 
         const { data: cats } = await supabase
@@ -41,7 +37,11 @@ export default function TasksPage() {
         const { data } = await query
         if (data) setTasks(data)
         setLoading(false)
-    }
+    }, [selectedCategory, selectedDifficulty])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     const filtered = tasks.filter(t =>
         t.title.toLowerCase().includes(search.toLowerCase()) ||

@@ -1,7 +1,7 @@
 'use client'
 
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl'
-import { useEffect, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useMemo, useCallback, useState } from 'react'
 import './FaultyTerminal.css'
 
 const vertexShader = `
@@ -275,7 +275,8 @@ export default function FaultyTerminal({
   const frozenTimeRef = useRef(0)
   const rafRef = useRef(0)
   const loadAnimationStartRef = useRef(0)
-  const timeOffsetRef = useRef(Math.random() * 100)
+  const [initialRandom] = useState(() => Math.random() * 100)
+  const timeOffsetRef = useRef(initialRandom)
 
   const tintVec = useMemo(() => hexToRgb(tint), [tint])
 

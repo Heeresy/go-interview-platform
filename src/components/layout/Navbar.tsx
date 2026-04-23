@@ -3,12 +3,9 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
-  MessageSquareCode,
   Code2,
-  GraduationCap,
-  Users,
   LogIn,
   Menu,
   X,
@@ -33,21 +30,24 @@ export default function Navbar() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   const [scrolled, setScrolled] = useState(false)
 
+  const checkUser = useCallback(async () => {
+    const supabase = createClient()
+    const { data } = await supabase.auth.getUser()
+    if (data.user) {
+      setUser({
+        id: data.user.id,
+        email: data.user.email,
+        avatar_url: data.user.user_metadata?.avatar_url,
+        display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
+      })
+    }
+  }, [])
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
 
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          avatar_url: data.user.user_metadata?.avatar_url,
-          display_name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
-        })
-      }
-    })
+    checkUser()
 
     const saved = localStorage.getItem('theme')
     if (saved === 'light') {
@@ -56,7 +56,7 @@ export default function Navbar() {
     }
 
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [checkUser])
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -80,7 +80,6 @@ export default function Navbar() {
         className="navbar container"
       >
         <div className="navbar__inner">
-          {/* Logo */}
           <Link href="/" className="navbar__logo">
             <div className="navbar__logo-icon">
               <Code2 size={24} strokeWidth={2.5} />
@@ -90,7 +89,6 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop navigation */}
           <div className="navbar__links" aria-label="Основная навигация">
             {NAV_ITEMS.map(({ href, label }) => {
               const isActive = pathname.startsWith(href)
@@ -116,7 +114,6 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Actions */}
           <div className="navbar__actions">
             <button
               className="btn-icon-aura"
@@ -158,7 +155,6 @@ export default function Navbar() {
         </div>
       </motion.nav>
 
-      {/* Mobile menu */}
       <motion.nav
         initial={false}
         animate={mobileOpen ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}

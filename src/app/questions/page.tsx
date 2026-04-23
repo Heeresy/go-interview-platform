@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Search, Filter, ChevronRight, MessageSquareCode, Sparkles } from 'lucide-react'
@@ -18,13 +18,8 @@ export default function QuestionsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null)
 
-  useEffect(() => {
-    loadData()
-  }, [selectedCategory, selectedDifficulty])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     console.log('[Questions] Loading data...')
-    setLoading(true)
     setError(null)
     const supabase = createClient()
 
@@ -36,7 +31,6 @@ export default function QuestionsPage() {
         .order('sort_order')
       if (catsError) throw catsError
       if (cats) {
-        console.log('[Questions] Loaded categories:', cats.length)
         setCategories(cats)
       }
 
@@ -58,10 +52,8 @@ export default function QuestionsPage() {
       if (questionsError) throw questionsError
 
       if (data) {
-        console.log('[Questions] Loaded questions:', data.length)
         setQuestions(data)
       } else {
-        console.log('[Questions] No questions returned')
         setQuestions([])
       }
     } catch (err) {
@@ -70,7 +62,11 @@ export default function QuestionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedCategory, selectedDifficulty])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const filtered = questions.filter(
     (q) =>
@@ -251,7 +247,7 @@ export default function QuestionsPage() {
 
       <style jsx>{`
         .page {
-          padding-top: var(--space-20); /* Increased padding to clear fixed navbar */
+          padding-top: var(--space-20);
         }
         .container {
           padding-top: var(--space-8);
@@ -316,28 +312,6 @@ export default function QuestionsPage() {
           align-items: center;
           gap: var(--space-3);
           flex-wrap: wrap;
-        }
-        .question-card {
-          /* Styles moved to inline for better visibility */
-        }
-        .question-card-link {
-          display: block;
-          height: 100%;
-        }
-        .question-glow-card {
-          height: 100%;
-          display: flex; /* Ensure it behaves as a flex container */
-          flex-direction: column;
-          transition: transform 0.2s ease;
-        }
-        .question-glow-card:hover {
-          transform: translateY(-4px);
-        }
-        .question-card-content {
-          flex: 1;
-        }
-        .card__body:empty {
-          display: none;
         }
       `}</style>
     </div>

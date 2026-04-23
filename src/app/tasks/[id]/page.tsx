@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, useCallback, use } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -23,17 +23,14 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     const [execTime, setExecTime] = useState(0)
     const [isExtended, setIsExtended] = useState(false)
 
-    useEffect(() => {
-        loadTask()
-    }, [id])
-
-    async function loadTask() {
+    const loadTask = useCallback(async () => {
         const supabase = createClient()
         const { data } = await supabase
             .from('tasks')
             .select('*, category:categories(*)')
             .eq('id', id)
             .single()
+
         if (data) {
             setTask(data)
             setCode(data.starter_code || `package main
@@ -46,7 +43,11 @@ func main() {
 `)
         }
         setLoading(false)
-    }
+    }, [id])
+
+    useEffect(() => {
+        loadTask()
+    }, [id, loadTask])
 
     async function handleRun(extended = false) {
         if (!task) return

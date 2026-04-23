@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, useCallback, use } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Star, Clock, User, BookOpen, Code, ChevronRight } from 'lucide-react'
@@ -15,11 +15,7 @@ export default function MockDetailPage({ params }: { params: Promise<{ id: strin
     const [tasks, setTasks] = useState<Task[]>([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        loadData()
-    }, [id])
-
-    async function loadData() {
+    const loadData = useCallback(async () => {
         const supabase = createClient()
 
         // 1. Fetch Mock Set
@@ -51,7 +47,11 @@ export default function MockDetailPage({ params }: { params: Promise<{ id: strin
             }
         }
         setLoading(false)
-    }
+    }, [id])
+
+    useEffect(() => {
+        loadData()
+    }, [loadData])
 
     if (loading) {
         return (

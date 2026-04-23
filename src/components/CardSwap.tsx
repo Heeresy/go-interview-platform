@@ -4,7 +4,11 @@ import React, { Children, cloneElement, forwardRef, isValidElement, useEffect, u
 import gsap from 'gsap'
 import './CardSwap.css'
 
-export const Card = forwardRef(({ customClass, ...rest }: any, ref: any) => (
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  customClass?: string
+}
+
+export const Card = forwardRef<HTMLDivElement, CardProps>(({ customClass, ...rest }, ref) => (
   <div ref={ref} {...rest} className={`card-swap-card ${customClass ?? ''} ${rest.className ?? ''}`.trim()} />
 ))
 Card.displayName = 'Card'
@@ -16,7 +20,8 @@ const makeSlot = (i: number, distX: number, distY: number, total: number) => ({
   zIndex: total - i,
 })
 
-const placeNow = (el: any, slot: any, skew: number) =>
+const placeNow = (el: HTMLElement | null, slot: { x: number, y: number, z: number, zIndex: number }, skew: number) => {
+  if (!el) return
   gsap.set(el, {
     x: slot.x,
     y: slot.y,
@@ -28,10 +33,11 @@ const placeNow = (el: any, slot: any, skew: number) =>
     zIndex: slot.zIndex,
     force3D: true,
   })
+}
 
 interface CardSwapProps {
-  width?: number
-  height?: number
+  width?: number | string
+  height?: number | string
   cardDistance?: number
   verticalDistance?: number
   delay?: number
@@ -148,7 +154,6 @@ const CardSwap = ({
       })
     }
 
-    swap()
     intervalRef.current = window.setInterval(swap, delay) as unknown as NodeJS.Timeout
 
     if (pauseOnHover) {
@@ -181,11 +186,12 @@ const CardSwap = ({
         key: i,
         ref: refs[i],
         style: { width, height, ...((child.props as any).style ?? {}) },
-        onClick: (e: any) => {
-          (child.props as any).onClick?.(e)
+        onClick: (e: React.MouseEvent) => {
+          const childProps = child.props as { onClick?: (e: React.MouseEvent) => void }
+          childProps.onClick?.(e)
           onCardClick?.(i)
         },
-      } as any)
+      } as React.Attributes)
       : child
   )
 
@@ -197,9 +203,3 @@ const CardSwap = ({
 }
 
 export default CardSwap
-
-
-
-
-
-

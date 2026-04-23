@@ -15,26 +15,32 @@ export default function MarkdownContent({ content, className = '' }: MarkdownCon
             <ReactMarkdown
                 rehypePlugins={[rehypeHighlight]}
                 components={{
-                    pre: ({ node, ...props }) => (
+                    pre: ({ children, ...props }) => (
                         <div className="markdown-pre-container">
-                            <pre {...props} className="markdown-pre" />
+                            <pre {...props} className="markdown-pre">
+                                {children}
+                            </pre>
                         </div>
                     ),
-                    code: ({ node, ...props }) => {
-                        const hasLang = /language-(\w+)/.exec(props.className || '')
+                    code: ({ className, children, ...props }) => {
+                        const hasLang = /language-(\w+)/.exec(className || '')
                         return hasLang ? (
-                            <code {...props} className="markdown-code-block" />
+                            <code {...props} className="markdown-code-block">
+                                {children}
+                            </code>
                         ) : (
-                            <code {...props} className="markdown-code-inline" />
+                            <code {...props} className="markdown-code-inline">
+                                {children}
+                            </code>
                         )
                     },
-                    p: ({ node, ...props }) => <p {...props} className="mb-4 last:mb-0 leading-relaxed" />,
-                    ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-6 mb-4 space-y-2" />,
-                    ol: ({ node, ...props }) => <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" />,
-                    li: ({ node, ...props }) => <li {...props} className="pl-1" />,
-                    h1: ({ node, ...props }) => <h1 {...props} className="text-2xl font-bold mb-4 mt-8 first:mt-0" />,
-                    h2: ({ node, ...props }) => <h2 {...props} className="text-xl font-bold mb-3 mt-6 first:mt-0" />,
-                    h3: ({ node, ...props }) => <h3 {...props} className="text-lg font-bold mb-2 mt-4 first:mt-0" />,
+                    p: ({ children, ...props }) => <p {...props} className="mb-4 last:mb-0 leading-relaxed" style={{ marginBottom: '1rem' }}>{children}</p>,
+                    ul: ({ children, ...props }) => <ul {...props} className="list-disc pl-6 mb-4 space-y-2" style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }}>{children}</ul>,
+                    ol: ({ children, ...props }) => <ol {...props} className="list-decimal pl-6 mb-4 space-y-2" style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }}>{children}</ol>,
+                    li: ({ children, ...props }) => <li {...props} className="pl-1" style={{ marginBottom: '0.25rem' }}>{children}</li>,
+                    h1: ({ children, ...props }) => <h1 {...props} className="text-2xl font-bold mb-4 mt-8 first:mt-0" style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', marginTop: '1.5rem' }}>{children}</h1>,
+                    h2: ({ children, ...props }) => <h2 {...props} className="text-xl font-bold mb-3 mt-6 first:mt-0" style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.75rem', marginTop: '1.25rem' }}>{children}</h2>,
+                    h3: ({ children, ...props }) => <h3 {...props} className="text-lg font-bold mb-2 mt-4 first:mt-0" style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '0.5rem', marginTop: '1rem' }}>{children}</h3>,
                 }}
             >
                 {content}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
@@ -39,7 +39,7 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  async function fetchStatus() {
+  const fetchStatus = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -49,16 +49,16 @@ export default function StatusPage() {
     } catch (err) {
       setError('Не удалось получить статус системы')
       console.error('Status fetch error:', err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     fetchStatus()
-    // Refresh every 30 seconds
     const interval = setInterval(fetchStatus, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchStatus])
 
   const getStatusIcon = (isHealthy: boolean) => {
     return isHealthy ? (
@@ -98,8 +98,8 @@ export default function StatusPage() {
                 padding: '24px',
                 marginBottom: '24px',
                 borderLeft: `4px solid ${status.status === 'healthy'
-                    ? 'var(--accent-green)'
-                    : 'var(--accent-orange)'
+                  ? 'var(--accent-green)'
+                  : 'var(--accent-orange)'
                   }`,
               }}
               initial={{ opacity: 0, scale: 0.95 }}

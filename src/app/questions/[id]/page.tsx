@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, useCallback, use } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Lightbulb, Send, Loader2, CheckCircle2, XCircle, Bot, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
@@ -21,11 +21,7 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
     const [showHint, setShowHint] = useState(false)
     const [showReferenceAnswer, setShowReferenceAnswer] = useState(false)
 
-    useEffect(() => {
-        loadQuestion()
-    }, [id])
-
-    async function loadQuestion() {
+    const loadQuestion = useCallback(async () => {
         const supabase = createClient()
         const { data } = await supabase
             .from('questions')
@@ -34,7 +30,11 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
             .single()
         if (data) setQuestion(data)
         setLoading(false)
-    }
+    }, [id])
+
+    useEffect(() => {
+        loadQuestion()
+    }, [id, loadQuestion])
 
     async function handleSubmit() {
         if (!answer.trim() || !question) return

@@ -56,10 +56,10 @@ function buildGradientVars(colors: string[]): Record<string, string> {
   return vars
 }
 
-function easeOutCubic(x) {
+function easeOutCubic(x: number) {
   return 1 - Math.pow(1 - x, 3)
 }
-function easeInCubic(x) {
+function easeInCubic(x: number) {
   return x * x * x
 }
 
@@ -122,15 +122,15 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
   colors = ['#c084fc', '#f472b6', '#38bdf8'],
   fillOpacity = 0.5,
 }) => {
-  const cardRef = useRef(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
-  const getCenterOfElement = useCallback((el) => {
+  const getCenterOfElement = useCallback((el: HTMLElement) => {
     const { width, height } = el.getBoundingClientRect()
     return [width / 2, height / 2]
   }, [])
 
   const getEdgeProximity = useCallback(
-    (el, x, y) => {
+    (el: HTMLElement, x: number, y: number) => {
       const [cx, cy] = getCenterOfElement(el)
       const dx = x - cx
       const dy = y - cy
@@ -144,7 +144,7 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
   )
 
   const getCursorAngle = useCallback(
-    (el, x, y) => {
+    (el: HTMLElement, x: number, y: number) => {
       const [cx, cy] = getCenterOfElement(el)
       const dx = x - cx
       const dy = y - cy
@@ -158,8 +158,8 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
   )
 
   const handlePointerMove = useCallback(
-    (e) => {
-      const card = cardRef.current
+    (e: React.PointerEvent) => {
+      const card = cardRef.current as HTMLDivElement | null
       if (!card) return
 
       const rect = card.getBoundingClientRect()
@@ -183,7 +183,7 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
     card.classList.add('sweep-active')
     card.style.setProperty('--cursor-angle', `${angleStart}deg`)
 
-    animateValue({ duration: 500, onUpdate: (v) => card.style.setProperty('--edge-proximity', v) })
+    animateValue({ duration: 500, onUpdate: (v) => card.style.setProperty('--edge-proximity', v.toString()) })
     animateValue({
       ease: easeInCubic,
       duration: 1500,
@@ -214,7 +214,7 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
       duration: 1500,
       start: 100,
       end: 0,
-      onUpdate: (v) => card.style.setProperty('--edge-proximity', v),
+      onUpdate: (v) => card.style.setProperty('--edge-proximity', v.toString()),
       onEnd: () => card.classList.remove('sweep-active'),
     })
   }, [animated])
@@ -235,7 +235,7 @@ const BorderGlow: React.FC<BorderGlowProps> = ({
         '--fill-opacity': fillOpacity,
         ...glowVars,
         ...buildGradientVars(colors),
-      }}
+      } as React.CSSProperties}
     >
       <span className="edge-light" />
       <div className="border-glow-inner">{children}</div>
