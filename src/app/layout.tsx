@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   keywords: ['Go', 'Golang', 'собеседование', 'подготовка', 'интервью', 'программирование'],
 }
 
+import { PageTransition } from '@/components/layout/PageTransition'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,9 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body>
+      <body className="antialiased">
         <Navbar />
-        <main>{children}</main>
+        <PageTransition>
+          <main>{children}</main>
+        </PageTransition>
         <AIAssistant />
         <SpeedInsights />
         <Analytics />

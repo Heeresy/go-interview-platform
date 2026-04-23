@@ -14,17 +14,21 @@ import {
   Shield,
   Brain,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { AuraCard } from '@/components/ui/AuraCard'
 
 const FaultyTerminal = dynamic(() => import('@/components/FaultyTerminal'), {
   ssr: false,
-  loading: () => <div style={{ position: 'absolute', inset: 0, background: 'var(--bg-primary)' }} />,
+  loading: () => (
+    <div style={{ position: 'absolute', inset: 0, background: 'var(--bg-primary)' }} />
+  ),
 })
 
 const CardSwap = dynamic(() => import('@/components/CardSwap'), {
   ssr: false,
 })
 
-const Card = dynamic(() => import('@/components/CardSwap').then(mod => mod.Card), {
+const Card = dynamic(() => import('@/components/CardSwap').then((mod) => mod.Card), {
   ssr: false,
 })
 
@@ -46,7 +50,8 @@ const FEATURES = [
   {
     icon: MessageSquareCode,
     title: 'Вопросы с собеседований',
-    description: 'Открытые вопросы с AI-оценкой ваших ответов. Получите обратную связь как от реального интервьюера.',
+    description:
+      'Открытые вопросы с AI-оценкой ваших ответов. Получите обратную связь как от реального интервьюера.',
     href: '/questions',
     color: 'var(--accent-blue)',
     bg: 'rgba(56, 189, 248, 0.1)',
@@ -54,7 +59,8 @@ const FEATURES = [
   {
     icon: Code2,
     title: 'Задачи с запуском кода',
-    description: 'Решайте задачи на Go прямо в браузере. Запускайте код с тестами и расширенной проверкой.',
+    description:
+      'Решайте задачи на Go прямо в браузере. Запускайте код с тестами и расширенной проверкой.',
     href: '/tasks',
     color: 'var(--accent-green)',
     bg: 'rgba(62, 207, 142, 0.1)',
@@ -62,7 +68,8 @@ const FEATURES = [
   {
     icon: GraduationCap,
     title: 'Тренажёр',
-    description: 'Прогрессивная подготовка: вопросы по возрастанию сложности с блоком задач в конце.',
+    description:
+      'Прогрессивная подготовка: вопросы по возрастанию сложности с блоком задач в конце.',
     href: '/trainer',
     color: 'var(--accent-purple)',
     bg: 'rgba(192, 132, 252, 0.1)',
@@ -120,18 +127,23 @@ export default function HomePage() {
               visible: { transition: { staggerChildren: 0.12 } },
             }}
           >
-            <motion.div className="hero__badge" variants={fadeUp} custom={0} aria-label="Бесплатная AI-платформа">
+            <motion.div
+              className="hero__badge"
+              variants={fadeUp}
+              custom={0}
+              aria-label="Бесплатная AI-платформа"
+            >
               <Sparkles size={14} aria-hidden="true" />
               Бесплатная AI-платформа
             </motion.div>
             <motion.h1 className="hero__title" variants={fadeUp} custom={1}>
-              Подготовьтесь к{' '}
-              <span className="hero__title-accent">Go-собеседованию</span>
-              <br />как профессионал
+              Подготовьтесь к <span className="hero__title-accent">Go-собеседованию</span>
+              <br />
+              как профессионал
             </motion.h1>
             <motion.p className="hero__subtitle" variants={fadeUp} custom={2}>
-              Вопросы с AI-оценкой, задачи с запуском кода, тренажёр с прогрессивной
-              сложностью и MOCK-интервью от сообщества
+              Вопросы с AI-оценкой, задачи с запуском кода, тренажёр с прогрессивной сложностью и
+              MOCK-интервью от сообщества
             </motion.p>
             <motion.div className="hero__actions" variants={fadeUp} custom={3}>
               <Link href="/trainer" className="btn btn--primary btn--lg">
@@ -146,17 +158,23 @@ export default function HomePage() {
 
           {/* Stats bar */}
           <motion.div
-            className="hero__stats"
+            className="hero__stats-container"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
-            {STATS.map((stat) => (
-              <div key={stat.label} className="hero__stat" aria-label={`${stat.value} ${stat.label}`}>
-                <div className="hero__stat-value">{stat.value}</div>
-                <div className="hero__stat-label">{stat.label}</div>
-              </div>
-            ))}
+            <div className="hero__stats glass--strong">
+              {STATS.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="hero__stat"
+                  aria-label={`${stat.value} ${stat.label}`}
+                >
+                  <div className="hero__stat-value">{stat.value}</div>
+                  <div className="hero__stat-label">{stat.label}</div>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>
@@ -177,7 +195,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="features__grid">
+          <div className="bento-grid">
             {FEATURES.map((feature, i) => (
               <motion.div
                 key={feature.title}
@@ -185,22 +203,32 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="features__grid-item"
+                className={cn(
+                  "bento-item",
+                  (i === 0 || i === 1) ? "bento-item--vertical" : "bento-item--standard"
+                )}
               >
-                <Link href={feature.href} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
-                  <div className="feature-card card">
+                <Link
+                  href={feature.href}
+                  className="h-full flex flex-col no-underline"
+                >
+                  <AuraCard className="feature-card flex-1">
                     <div
                       className="feature-card__icon-wrapper"
-                      style={{ background: feature.bg, color: feature.color }}
+                      style={{
+                        background: `oklch(from ${feature.color} l c h / 0.1)`,
+                        color: feature.color,
+                        border: `1px solid oklch(from ${feature.color} l c h / 0.2)`
+                      }}
                     >
-                      <feature.icon size={24} strokeWidth={2} />
+                      <feature.icon size={(i === 0 || i === 1) ? 32 : 24} strokeWidth={2} />
                     </div>
-                    <h3 className="feature-card__title">{feature.title}</h3>
+                    <h3 className={cn("feature-card__title", (i === 0 || i === 1) && "text-2xl")}>{feature.title}</h3>
                     <p className="feature-card__desc">{feature.description}</p>
                     <div className="feature-card__cta">
-                      Перейти <ArrowRight size={14} />
+                      {(i === 0 || i === 1) ? "Начать обучение" : "Перейти"} <ArrowRight size={14} />
                     </div>
-                  </div>
+                  </AuraCard>
                 </Link>
               </motion.div>
             ))}
@@ -210,45 +238,47 @@ export default function HomePage() {
 
       {/* Section 3: Why with CardSwap */}
       <section className="home__section home__section--3">
-        <div className="container" style={{ position: 'relative', width: '100%', height: '100%' }}>
-          <div style={{ flex: '0 0 40%', zIndex: 10 }}>
-            <h2 style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 800, marginBottom: 'var(--space-4)' }}>
-              Почему мы лучше?
-            </h2>
-            <p style={{ fontSize: 'var(--font-size-lg)', color: 'var(--text-secondary)', margin: 0 }}>
-              Три основные преимущества нашей платформы
+        <div className="container flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 text-center lg:text-left">
+          <div className="max-w-md">
+            <h2 className="text-5xl font-bold mb-6">Почему мы лучше?</h2>
+            <p className="text-xl text-muted leading-relaxed">
+              Три основные преимущества нашей платформы, реализованные с помощью современных технологий.
             </p>
           </div>
-          <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+
+          <div className="flex justify-center flex-shrink-0">
             <CardSwap
-              width={500}
-              height={400}
-              cardDistance={60}
-              verticalDistance={70}
-              delay={4000}
+              width={480}
+              height={360}
+              cardDistance={50}
+              verticalDistance={60}
+              delay={5000}
               pauseOnHover={true}
               easing="elastic"
             >
-              <Card>
-                <div style={{ color: 'var(--accent-purple)', marginBottom: 'var(--space-4)' }}>
-                  <Brain size={48} />
+              <Card className="p-10">
+                <div style={{ color: 'var(--accent-purple)', marginBottom: 'var(--space-6)' }}>
+                  <Brain size={56} />
                 </div>
-                <h3>AI-оценка</h3>
-                <p>Нейросеть анализирует ваш ответ и даёт подробную обратную связь, как настоящий интервьюер</p>
+                <h3 className="text-2xl font-bold mb-4">AI-оценка</h3>
+                <p className="text-muted text-lg">
+                  Нейросеть анализирует ваш ответ и даёт подробную обратную связь, как настоящий
+                  интервьюер
+                </p>
               </Card>
-              <Card>
-                <div style={{ color: 'var(--accent-yellow)', marginBottom: 'var(--space-4)' }}>
-                  <Zap size={48} />
+              <Card className="p-10">
+                <div style={{ color: 'var(--accent-yellow)', marginBottom: 'var(--space-6)' }}>
+                  <Zap size={56} />
                 </div>
-                <h3>Запуск кода</h3>
-                <p>Пишите и запускайте Go-код прямо в браузере с настоящими тестами и проверкой</p>
+                <h3 className="text-2xl font-bold mb-4">Запуск кода</h3>
+                <p className="text-muted text-lg">Пишите и запускайте Go-код прямо в браузере с настоящими тестами и проверкой</p>
               </Card>
-              <Card>
-                <div style={{ color: 'var(--accent-green)', marginBottom: 'var(--space-4)' }}>
-                  <Shield size={48} />
+              <Card className="p-10">
+                <div style={{ color: 'var(--accent-green)', marginBottom: 'var(--space-6)' }}>
+                  <Shield size={56} />
                 </div>
-                <h3>100% бесплатно</h3>
-                <p>Все функции доступны бесплатно. Без подписок, без ограничений, без подвоха</p>
+                <h3 className="text-2xl font-bold mb-4">100% бесплатно</h3>
+                <p className="text-muted text-lg">Все функции доступны бесплатно. Без подписок, без ограничений, без подвоха</p>
               </Card>
             </CardSwap>
           </div>
@@ -258,22 +288,18 @@ export default function HomePage() {
       <style jsx>{`
         .home {
           overflow-x: hidden;
-          scroll-snap-type: y mandatory;
-          scroll-behavior: smooth;
-          height: 100vh;
-          overflow-y: scroll;
+          width: 100%;
         }
 
         /* === FULL SCREEN SECTIONS === */
         .home__section {
           width: 100%;
-          min-height: 100vh;
-          scroll-snap-align: start;
-          scroll-snap-stop: always;
+          min-height: calc(100vh - 80px);
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
+          padding: var(--space-16) 0;
         }
 
         .home__section--1 {
@@ -327,14 +353,14 @@ export default function HomePage() {
           min-height: 100vh;
           width: 100%;
           padding: var(--space-8);
-          color: #EDEDED;
+          color: #ededed;
         }
         .hero__content {
-          flex: 1;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          margin-bottom: var(--space-12);
         }
         .hero__badge {
           display: inline-flex;
@@ -342,20 +368,20 @@ export default function HomePage() {
           gap: var(--space-2);
           padding: var(--space-2) var(--space-4);
           background: rgba(62, 207, 142, 0.2);
-          color: #3ECF8E !important;
+          color: #3ecf8e !important;
           border-radius: var(--radius-full);
           font-size: var(--font-size-sm);
           font-weight: 600;
-          margin-bottom: var(--space-6);
+          margin-bottom: var(--space-8);
         }
         .hero__title {
           font-size: var(--font-size-5xl);
           font-weight: 800;
           line-height: 1.15;
           letter-spacing: -0.03em;
-          margin-bottom: var(--space-6);
+          margin-bottom: var(--space-10);
           max-width: 900px;
-          color: #EDEDED !important;
+          color: #ededed !important;
         }
         .hero__title-accent {
           background: linear-gradient(135deg, #facc15, #fb923c);
@@ -365,69 +391,74 @@ export default function HomePage() {
         }
         .hero__subtitle {
           font-size: var(--font-size-lg);
-          color: #A1A1AA !important;
-          max-width: 600px;
-          margin: 0 auto var(--space-8);
+          color: #a1a1aa !important;
+          max-width: 800px;
+          margin: 0 auto var(--space-14);
           line-height: var(--line-height-relaxed);
         }
         .hero__actions {
           display: flex;
-          gap: var(--space-4);
+          gap: var(--space-6);
           justify-content: center;
           flex-wrap: wrap;
-          margin-bottom: auto;
+          margin-bottom: 0;
         }
         .hero__actions .btn--secondary {
-          color: #EDEDED !important;
+          color: #ededed !important;
           border-color: rgba(255, 255, 255, 0.2);
         }
         .hero__actions .btn--secondary:hover {
           background: rgba(255, 255, 255, 0.1);
           border-color: rgba(255, 255, 255, 0.3);
         }
-        .hero__stats {
-          display: flex;
-          justify-content: center;
-          gap: var(--space-12);
-          margin-top: var(--space-16);
-          padding-top: var(--space-8);
-          border-top: 1px solid var(--border-color);
+        .hero__stats-container {
           width: 100%;
+          max-width: 900px;
+          margin-top: var(--space-16);
         }
-        .hero__stat {
+        .hero__stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--space-12);
+          padding: var(--space-12);
+          width: 100%;
           text-align: center;
         }
         .hero__stat-value {
-          font-size: var(--font-size-3xl);
+          font-size: var(--font-size-2xl);
           font-weight: 800;
-          color: #3ECF8E !important;
+          color: var(--color-primary) !important;
+          margin-bottom: var(--space-1);
         }
         .hero__stat-label {
           font-size: var(--font-size-sm);
-          color: #A1A1AA !important;
-          margin-top: var(--space-1);
+          color: var(--text-secondary) !important;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         /* === Features (Section 2) === */
         .home__section--2 {
           height: 100vh;
           padding: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .home__section--2 .container {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: flex-start;
-          height: 100%;
-          width: 100%;
-          padding: 5vh var(--space-6) 0;
-          box-sizing: border-box;
+          justify-content: center;
+          min-height: 80vh;
+          padding: var(--space-12) 0;
         }
 
         .features__header {
           text-align: center;
-          margin-bottom: var(--space-8);
+          margin-bottom: var(--space-10);
+          margin-top: var(--space-8);
         }
         .features__title {
           font-size: var(--font-size-3xl);
@@ -442,20 +473,36 @@ export default function HomePage() {
         }
         .features__grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: var(--space-6);
           width: 100%;
-          max-width: 1200px;
+          max-width: 900px;
           margin: 0 auto;
-          justify-content: center;
-          padding: 0 var(--space-6);
-          box-sizing: border-box;
         }
 
-        .features__grid-item {
-          display: flex;
+        .bento-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          grid-template-rows: repeat(2, 1fr);
+          grid-auto-rows: 1fr;
+          gap: var(--space-6);
           width: 100%;
-          min-width: 0;
+          max-width: 900px;
+          margin: 0 auto;
+          align-items: stretch;
+        }
+
+        .bento-item {
+          display: flex;
+          height: 100%;
+        }
+
+        .bento-item--vertical {
+          grid-row: span 2;
+        }
+
+        .bento-item--standard {
+          grid-column: span 1;
         }
 
         @media (max-width: 1400px) {
@@ -465,10 +512,25 @@ export default function HomePage() {
           }
         }
 
+        @media (max-width: 768px) {
+          .home__section--2 .container {
+            padding: var(--space-8) var(--space-4);
+            min-height: auto;
+          }
+          .features__header {
+            margin-top: var(--space-4);
+            margin-bottom: var(--space-6);
+          }
+        }
+
         @media (max-width: 640px) {
           .features__grid {
             grid-template-columns: 1fr;
             max-width: 400px;
+          }
+          .home__section--2 {
+            height: auto;
+            min-height: 100vh;
           }
         }
         .feature-card {
@@ -518,16 +580,12 @@ export default function HomePage() {
           display: flex;
           flex-direction: row;
           align-items: center;
-          justify-content: space-between;
-          min-height: 100%;
-          width: 100%;
-          position: relative;
-          gap: var(--space-16);
-          padding: var(--space-12) var(--space-20);
+          justify-content: center;
+          gap: var(--space-24);
         }
 
         .home__section--3 .container > div:first-child {
-          flex: 0 0 40%;
+          max-width: 480px;
           text-align: left;
           z-index: 10;
         }
@@ -582,6 +640,22 @@ export default function HomePage() {
           .hero__stats {
             gap: var(--space-6);
             flex-wrap: wrap;
+          }
+
+          .hero__stats-container {
+            max-width: 100%;
+          }
+
+          .hero__stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+            padding: var(--space-4);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .hero__stats {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

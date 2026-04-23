@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   const checks = {
-    openrouter: {
-      configured: !!process.env.OPENROUTER_API_KEY,
-      hasSiteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
+    gemini: {
+      configured: !!process.env.GOOGLE_AI_API_KEY,
     },
     supabase: {
       urlConfigured: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,7 +15,7 @@ export async function GET() {
   }
 
   const allConfigured =
-    checks.openrouter.configured &&
+    checks.gemini.configured &&
     checks.supabase.urlConfigured &&
     checks.supabase.keyConfigured
 

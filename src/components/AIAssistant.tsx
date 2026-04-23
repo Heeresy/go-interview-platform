@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { Bot, X, Send, Loader2 } from 'lucide-react'
 import type { AIChatMessage } from '@/types/database'
+import MarkdownContent from '@/components/ui/MarkdownContent'
 
 export default function AIAssistant({ context }: { context?: string }) {
   const [open, setOpen] = useState(false)
@@ -148,7 +149,7 @@ export default function AIAssistant({ context }: { context?: string }) {
                   color: msg.role === 'user' ? '#EDEDED' : '#A1A1AA',
                 }}
               >
-                {msg.content}
+                <MarkdownContent content={msg.content} />
               </div>
             ))}
             {loading && (

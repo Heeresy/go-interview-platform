@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { GraduationCap, ArrowRight, CheckCircle2, XCircle, Trophy, Flame, BarChart3 } from 'lucide-react'
+import { GraduationCap, ArrowRight, CheckCircle2, XCircle, Trophy, Flame, BarChart3, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getDifficultyLabel } from '@/lib/utils'
+import { AuraCard } from '@/components/ui/AuraCard'
 import type { Question, Difficulty } from '@/types/database'
 
 export default function TrainerPage() {
@@ -96,35 +97,61 @@ export default function TrainerPage() {
                 {!started ? (
                     // Start screen
                     <motion.div
-                        className="trainer-start"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <div className="trainer-start__icon">
-                            <GraduationCap size={48} />
-                        </div>
-                        <h1 className="page__title text-center">Тренажёр</h1>
-                        <p className="page__subtitle text-center">
-                            Вопросы по возрастанию сложности. Ответьте правильно на 70% — переходите на следующий уровень.
-                        </p>
+                        <AuraCard className="trainer-start flex flex-col items-center p-12">
+                            <div className="trainer-start__icon mb-8">
+                                <GraduationCap size={48} />
+                            </div>
+                            <h1 className="text-4xl font-bold mb-4">Тренажёр</h1>
+                            <p className="text-secondary text-lg mb-10 max-w-md">
+                                Вопросы по возрастанию сложности. Ответьте правильно на 70% — переходите на следующий уровень.
+                            </p>
 
-                        <div className="trainer-start__levels">
-                            {([1, 2, 3, 4, 5] as Difficulty[]).map(d => (
-                                <button
-                                    key={d}
-                                    className={cn('trainer-level glass', currentLevel === d && 'trainer-level--active')}
-                                    onClick={() => setCurrentLevel(d)}
-                                >
-                                    <span className="trainer-level__num">{d}</span>
-                                    <span className="trainer-level__label">{getDifficultyLabel(d)}</span>
-                                </button>
-                            ))}
-                        </div>
+                            <div className="grid grid--2 gap-4 mb-12 w-full max-w-2xl">
+                                {([1, 2, 3, 4, 5] as Difficulty[]).map(d => (
+                                    <button
+                                        key={d}
+                                        className={cn(
+                                            'trainer-level-card relative p-6 rounded-2xl border-2 transition-all text-left overflow-hidden group',
+                                            currentLevel === d
+                                                ? 'border-primary bg-primary-10 ring-4 ring-primary/5'
+                                                : 'border-glass-border bg-glass-bg hover:border-glass-border-hover hover:bg-glass-bg-strong'
+                                        )}
+                                        onClick={() => setCurrentLevel(d)}
+                                    >
+                                        <div className="flex items-center gap-4 relative z-10">
+                                            <div className={cn(
+                                                "w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-colors",
+                                                currentLevel === d ? "bg-primary text-bg-primary" : "bg-bg-tertiary text-muted group-hover:text-primary"
+                                            )}>
+                                                {d}
+                                            </div>
+                                            <div>
+                                                <div className={cn("font-bold text-lg", currentLevel === d ? "text-primary" : "text-primary")}>
+                                                    {getDifficultyLabel(d)}
+                                                </div>
+                                                <div className="text-xs text-muted font-medium uppercase tracking-wider">
+                                                    Уровень {d}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {currentLevel === d && (
+                                            <motion.div
+                                                layoutId="active-level-glow"
+                                                className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none"
+                                            />
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
 
-                        <button className="btn btn--primary btn--lg" onClick={startTraining} style={{ marginTop: 'var(--space-8)' }}>
-                            Начать тренировку
-                            <ArrowRight size={18} />
-                        </button>
+                            <button className="btn btn--primary btn--lg px-12" onClick={startTraining}>
+                                Начать тренировку
+                                <ArrowRight size={18} />
+                            </button>
+                        </AuraCard>
                     </motion.div>
                 ) : phase === 'tasks' ? (
                     // Tasks phase
@@ -145,82 +172,87 @@ export default function TrainerPage() {
                     </motion.div>
                 ) : (
                     // Active training
-                    <div className="trainer-active">
+                    <div className="trainer-active space-y-6">
                         {/* Stats bar */}
-                        <div className="trainer-stats glass glass--strong">
-                            <div className="trainer-stat">
-                                <BarChart3 size={16} />
+                        <AuraCard className="flex items-center justify-between p-4 px-8">
+                            <div className="flex items-center gap-2 font-bold">
+                                <BarChart3 size={18} className="text-primary" />
                                 <span>Уровень {currentLevel}</span>
                             </div>
-                            <div className="trainer-stat">
-                                <CheckCircle2 size={16} style={{ color: 'var(--accent-green)' }} />
+                            <div className="flex items-center gap-2 font-bold">
+                                <CheckCircle2 size={18} className="text-green-500" />
                                 <span>{stats.correct}/{stats.total}</span>
                             </div>
-                            <div className="trainer-stat">
-                                <Flame size={16} style={{ color: 'var(--accent-orange)' }} />
+                            <div className="flex items-center gap-2 font-bold">
+                                <Flame size={18} className="text-orange-500" />
                                 <span>Серия: {stats.streak}</span>
                             </div>
-                        </div>
+                        </AuraCard>
 
                         {/* Progress */}
-                        <div className="progress" style={{ marginBottom: 'var(--space-6)' }}>
-                            <div className="progress__bar" style={{ width: `${progress}%` }} />
+                        <div className="progress h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                className="h-full bg-primary"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                            />
                         </div>
 
                         {/* Question */}
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={currentIndex}
-                                className="trainer-question glass glass--strong"
-                                initial={{ opacity: 0, x: 50 }}
+                                initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -50 }}
+                                exit={{ opacity: 0, x: -20 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <div className="text-sm text-muted" style={{ marginBottom: 'var(--space-2)' }}>
-                                    Вопрос {currentIndex + 1} из {questions.length}
-                                </div>
-                                <h2 className="trainer-question__title">{currentQuestion?.title}</h2>
-                                <p className="trainer-question__desc">{currentQuestion?.description}</p>
-
-                                {!result ? (
-                                    <div style={{ marginTop: 'var(--space-6)' }}>
-                                        <textarea
-                                            className="input textarea"
-                                            placeholder="Ваш ответ..."
-                                            value={answer}
-                                            onChange={(e) => setAnswer(e.target.value)}
-                                            rows={5}
-                                            disabled={evaluating}
-                                        />
-                                        <button
-                                            className="btn btn--primary"
-                                            onClick={handleSubmit}
-                                            disabled={answer.trim().length < 10 || evaluating}
-                                            style={{ marginTop: 'var(--space-4)' }}
-                                        >
-                                            {evaluating ? 'Оценка...' : 'Ответить'}
-                                        </button>
+                                <AuraCard className="p-8">
+                                    <div className="text-xs font-bold text-muted uppercase tracking-widest mb-4">
+                                        Вопрос {currentIndex + 1} из {questions.length}
                                     </div>
-                                ) : (
-                                    <motion.div
-                                        className="trainer-result"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                    >
-                                        <div className={cn('trainer-result__score', result.score >= 85 ? 'trainer-result__score--pass' : 'trainer-result__score--fail')}>
-                                            {result.score >= 85 ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
-                                            <span>{result.score}%</span>
+                                    <h2 className="text-2xl font-bold mb-4">{currentQuestion?.title}</h2>
+                                    <p className="text-secondary leading-relaxed mb-8 whitespace-pre-wrap">{currentQuestion?.description}</p>
+
+                                    {!result ? (
+                                        <div className="space-y-4">
+                                            <textarea
+                                                className="input textarea min-h-[160px]"
+                                                placeholder="Ваш ответ..."
+                                                value={answer}
+                                                onChange={(e) => setAnswer(e.target.value)}
+                                                disabled={evaluating}
+                                            />
+                                            <button
+                                                className="btn btn--primary w-full py-4 text-lg"
+                                                onClick={handleSubmit}
+                                                disabled={answer.trim().length < 10 || evaluating}
+                                            >
+                                                {evaluating ? (
+                                                    <><Loader2 size={20} className="animate-spin mr-2" /> Оценка...</>
+                                                ) : 'Ответить'}
+                                            </button>
                                         </div>
-                                        <p className="text-sm" style={{ color: 'var(--text-secondary)', marginTop: 'var(--space-3)' }}>
-                                            {result.feedback}
-                                        </p>
-                                        <button className="btn btn--primary" onClick={nextQuestion} style={{ marginTop: 'var(--space-4)' }}>
-                                            {currentIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить уровень'}
-                                            <ArrowRight size={16} />
-                                        </button>
-                                    </motion.div>
-                                )}
+                                    ) : (
+                                        <motion.div
+                                            className="pt-8 border-t border-glass-border"
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                        >
+                                            <div className={cn('flex items-center gap-3 text-2xl font-bold mb-4', result.score >= 85 ? 'text-green-500' : 'text-red-500')}>
+                                                {result.score >= 85 ? <CheckCircle2 size={32} /> : <XCircle size={32} />}
+                                                <span>{result.score}%</span>
+                                            </div>
+                                            <p className="text-secondary text-sm leading-relaxed mb-8">
+                                                {result.feedback}
+                                            </p>
+                                            <button className="btn btn--primary w-full py-4 text-lg" onClick={nextQuestion}>
+                                                {currentIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить уровень'}
+                                                <ArrowRight size={20} className="ml-2" />
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AuraCard>
                             </motion.div>
                         </AnimatePresence>
                     </div>

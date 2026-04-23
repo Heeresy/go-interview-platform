@@ -2,12 +2,14 @@
 
 import { useState, useEffect, use } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Lightbulb, Send, Loader2, CheckCircle2, XCircle, Bot } from 'lucide-react'
+import { ArrowLeft, Lightbulb, Send, Loader2, CheckCircle2, XCircle, Bot, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { cn, getDifficultyBadgeClass, getDifficultyLabel } from '@/lib/utils'
 import { trackQuestionAnswered } from '@/lib/analytics'
+import { AuraCard } from '@/components/ui/AuraCard'
 import type { Question } from '@/types/database'
+import MarkdownContent from '@/components/ui/MarkdownContent'
 
 export default function QuestionDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params)
@@ -17,6 +19,7 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
     const [evaluating, setEvaluating] = useState(false)
     const [result, setResult] = useState<{ score: number; feedback: string } | null>(null)
     const [showHint, setShowHint] = useState(false)
+    const [showReferenceAnswer, setShowReferenceAnswer] = useState(false)
 
     useEffect(() => {
         loadQuestion()
@@ -102,8 +105,8 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
                 </Link>
 
                 {/* Question Card */}
-                <div className="question-detail glass glass--strong">
-                    <div className="flex items-center gap-3" style={{ marginBottom: 'var(--space-4)' }}>
+                <AuraCard className="question-detail p-8 mb-6">
+                    <div className="flex items-center gap-3 mb-6">
                         <span className={cn('badge', getDifficultyBadgeClass(question.difficulty))}>
                             {getDifficultyLabel(question.difficulty)}
                         </span>
@@ -112,14 +115,16 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
                         )}
                     </div>
 
-                    <h1 className="question-detail__title">{question.title}</h1>
-                    <p className="question-detail__desc">{question.description}</p>
+                    <h1 className="text-3xl font-bold mb-4 tracking-tight">{question.title}</h1>
+                    <div className="mb-8">
+                        <MarkdownContent content={question.description} className="text-secondary" />
+                    </div>
 
                     {/* Hint */}
                     {question.hint && (
-                        <div className="hint-section">
+                        <div className="pt-6 border-t border-glass-border">
                             <button
-                                className="btn btn--ghost btn--sm"
+                                className="btn btn--secondary btn--sm"
                                 onClick={() => setShowHint(!showHint)}
                             >
                                 <Lightbulb size={16} />
@@ -128,7 +133,7 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
                             <AnimatePresence>
                                 {showHint && (
                                     <motion.div
-                                        className="hint-content"
+                                        className="mt-4 p-4 bg-primary/10 rounded-xl border border-primary/20 text-secondary text-sm"
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
                                         exit={{ height: 0, opacity: 0 }}
@@ -140,31 +145,62 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
                             </AnimatePresence>
                         </div>
                     )}
-                </div>
+
+                    {/* Reference Answer Toggle */}
+                    {question.reference_answer && (
+                        <div className="mt-4 pt-4 border-t border-glass-border">
+                            <button
+                                className="btn btn--secondary btn--sm w-full font-semibold"
+                                onClick={() => setShowReferenceAnswer(!showReferenceAnswer)}
+                            >
+                                {showReferenceAnswer ? <EyeOff size={16} /> : <Eye size={16} />}
+                                {showReferenceAnswer ? 'Скрыть эталонный ответ' : 'Показать эталонный ответ'}
+                            </button>
+                            <AnimatePresence>
+                                {showReferenceAnswer && (
+                                    <motion.div
+                                        className="overflow-hidden"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.3, ease: "circOut" }}
+                                    >
+                                        <div className="mt-4 p-5 bg-white/5 rounded-xl border border-white/10 border-l-4 border-l-primary">
+                                            <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-primary mb-3">
+                                                <Bot size={14} />
+                                                <span>Эталонный ответ</span>
+                                            </div>
+                                            <MarkdownContent content={question.reference_answer} className="text-secondary text-sm" />
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
+                </AuraCard>
 
                 {/* Answer Section */}
-                <div className="answer-section glass glass--strong">
-                    <h2 className="answer-section__title">Ваш ответ</h2>
+                <AuraCard className="answer-section p-8 mb-6">
+                    <h2 className="text-lg font-bold mb-4">Ваш ответ</h2>
                     <textarea
-                        className="input textarea"
+                        className="input textarea min-h-[200px]"
                         placeholder="Напишите свой ответ на вопрос..."
                         value={answer}
                         onChange={(e) => setAnswer(e.target.value)}
-                        rows={6}
                         disabled={evaluating}
                     />
-                    <div className="flex justify-between items-center" style={{ marginTop: 'var(--space-4)' }}>
+                    <div className="flex justify-between items-center mt-4">
                         <span className="text-xs text-muted">
                             {answer.length > 0 ? `${answer.length} символов` : 'Минимум 20 символов'}
                         </span>
                         <button
-                            className="btn btn--primary"
+                            className="btn btn--primary px-8"
                             onClick={handleSubmit}
                             disabled={answer.trim().length < 20 || evaluating}
                         >
                             {evaluating ? (
                                 <>
-                                    <Loader2 size={16} className="spin" />
+                                    <Loader2 size={16} className="animate-spin" />
                                     Оценка...
                                 </>
                             ) : (
@@ -175,7 +211,7 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
                             )}
                         </button>
                     </div>
-                </div>
+                </AuraCard>
 
                 {/* Result */}
                 <AnimatePresence>
@@ -304,6 +340,49 @@ export default function QuestionDetailPage({ params }: { params: Promise<{ id: s
           font-size: var(--font-size-sm);
           line-height: var(--line-height-relaxed);
           white-space: pre-wrap;
+        }
+        .reference-answer-section {
+          margin-top: var(--space-4);
+          padding-top: var(--space-4);
+          border-top: 1px solid var(--border-color);
+        }
+        .reveal-btn {
+          justify-content: center;
+          gap: var(--space-2);
+          background: rgba(167, 239, 158, 0.05);
+          border: 1px solid rgba(167, 239, 158, 0.1);
+          color: var(--color-primary);
+        }
+        .reveal-btn:hover {
+          background: rgba(167, 239, 158, 0.1);
+          border-color: var(--color-primary);
+        }
+        .reference-answer-content {
+          overflow: hidden;
+        }
+        .answer-msg {
+          margin-top: var(--space-4);
+          padding: var(--space-5);
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: var(--radius-md);
+          border-left: 3px solid var(--color-primary);
+        }
+        .answer-msg__header {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--font-size-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--color-primary);
+          margin-bottom: var(--space-3);
+          font-weight: 600;
+        }
+        .answer-msg__text {
+          color: var(--text-primary);
+          line-height: var(--line-height-relaxed);
+          white-space: pre-wrap;
+          font-size: var(--font-size-sm);
         }
         :global(.spin) {
           animation: spin 1s linear infinite;

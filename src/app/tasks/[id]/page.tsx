@@ -8,6 +8,7 @@ import { ArrowLeft, Play, Loader2, CheckCircle2, XCircle, FlaskConical, RotateCc
 import { createClient } from '@/lib/supabase/client'
 import { cn, getDifficultyBadgeClass, getDifficultyLabel } from '@/lib/utils'
 import type { Task, TestResults } from '@/types/database'
+import MarkdownContent from '@/components/ui/MarkdownContent'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
 
@@ -131,7 +132,7 @@ func main() {
                             {task.category && <span className="badge badge--purple">{task.category.name}</span>}
                         </div>
                         <h1 className="task-desc__title">{task.title}</h1>
-                        <div className="task-desc__body">{task.description}</div>
+                        <MarkdownContent content={task.description} className="task-desc__body" />
                         <div className="task-desc__meta">
                             <span>⏱ Лимит: {task.time_limit_ms / 1000}с</span>
                             <span>💾 Память: {task.memory_limit_mb}MB</span>
@@ -202,10 +203,12 @@ func main() {
                                     <div className="test-results__header">
                                         <div className={cn('flex items-center gap-2 font-bold', runStatus === 'passed' ? '' : '')} style={{ color: runStatus === 'passed' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                                             {runStatus === 'passed' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
-                                            {runStatus === 'passed' ? 'Все тесты пройдены!' : runStatus === 'error' ? 'Ошибка' : 'Тесты не пройдены'}
+                                            {task.test_cases.length === 0
+                                                ? (runStatus === 'passed' ? 'Программа выполнена' : 'Ошибка выполнения')
+                                                : (runStatus === 'passed' ? 'Все тесты пройдены!' : runStatus === 'error' ? 'Ошибка' : 'Тесты не пройдены')}
                                         </div>
                                         <div className="text-sm text-muted">
-                                            {results.passed}/{results.total} | {execTime}ms
+                                            {task.test_cases.length > 0 ? `${results.passed}/${results.total} | ` : ''}{execTime}ms
                                         </div>
                                     </div>
                                     <div className="test-results__list">
@@ -213,12 +216,25 @@ func main() {
                                             <div key={i} className={cn('test-result', detail.passed ? 'test-result--pass' : 'test-result--fail')}>
                                                 <span>{detail.passed ? '✓' : '✗'}</span>
                                                 <div style={{ flex: 1 }}>
-                                                    <div>Вход: <code>{detail.input || '(пусто)'}</code></div>
-                                                    {!detail.passed && (
+                                                    {task.test_cases.length > 0 ? (
                                                         <>
-                                                            <div>Ожидалось: <code>{detail.expected}</code></div>
-                                                            <div>Получено: <code>{detail.actual}</code></div>
+                                                            <div>Вход: <code>{detail.input || '(пусто)'}</code></div>
+                                                            {!detail.passed && (
+                                                                <>
+                                                                    <div>Ожидалось: <code>{detail.expected}</code></div>
+                                                                    <div>Получено: <code>{detail.actual}</code></div>
+                                                                </>
+                                                            )}
                                                         </>
+                                                    ) : (
+                                                        <div>Вывод: <pre style={{
+                                                            margin: 'var(--space-2) 0 0 0',
+                                                            padding: 'var(--space-3)',
+                                                            background: 'rgba(0,0,0,0.3)',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            fontSize: 'var(--font-size-xs)',
+                                                            fontFamily: 'JetBrains Mono, monospace'
+                                                        }}>{detail.actual}</pre></div>
                                                     )}
                                                 </div>
                                                 {detail.execution_time_ms !== undefined && (

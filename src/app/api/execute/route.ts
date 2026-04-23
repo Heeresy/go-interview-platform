@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
-import { executeGoCode } from '@/lib/piston'
+import { executeGoCode } from '@/lib/execution-engine'
 
 export async function POST(request: Request) {
     try {
         const { code, test_cases, time_limit_ms, memory_limit_mb } = await request.json()
 
-        if (!code || !test_cases?.length) {
+        if (!code) {
             return NextResponse.json(
-                { error: 'Missing code or test cases' },
+                { error: 'Missing code' },
                 { status: 400 }
             )
         }

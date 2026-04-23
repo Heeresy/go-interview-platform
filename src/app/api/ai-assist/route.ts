@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getAIHint } from '@/lib/openrouter'
+import { getAIHint } from '@/lib/ai'
 
 export async function POST(request: Request) {
   console.log('[AI Assist] Request received')
@@ -20,12 +20,12 @@ export async function POST(request: Request) {
     }
 
     // Check if API key is configured
-    if (!process.env.OPENROUTER_API_KEY) {
-      console.error('[AI Assist] Error: OPENROUTER_API_KEY is not set')
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      console.error('[AI Assist] Error: GOOGLE_AI_API_KEY is not set')
       return NextResponse.json(
         {
           error: 'AI service not configured',
-          response: 'AI помощник не настроен. Пожалуйста, обратитесь к администратору.',
+          response: 'AI помощник не настроен. Пожалуйста, добавьте GOOGLE_AI_API_KEY в переменные окружения.',
         },
         { status: 500 }
       )

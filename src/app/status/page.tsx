@@ -20,9 +20,8 @@ interface HealthStatus {
   timestamp: string
   environment: string
   checks: {
-    openrouter: {
+    gemini: {
       configured: boolean
-      hasSiteUrl: boolean
     }
     supabase: {
       urlConfigured: boolean
@@ -98,11 +97,10 @@ export default function StatusPage() {
               style={{
                 padding: '24px',
                 marginBottom: '24px',
-                borderLeft: `4px solid ${
-                  status.status === 'healthy'
+                borderLeft: `4px solid ${status.status === 'healthy'
                     ? 'var(--accent-green)'
                     : 'var(--accent-orange)'
-                }`,
+                  }`,
               }}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -125,7 +123,7 @@ export default function StatusPage() {
                           : 'var(--accent-orange)',
                     }}
                   >
-                    {status.status === 'healthy' ? 'Все сервисы настроены' : 'Требуется настройка'}
+                    {status.status === 'healthy' ? 'Модели Gemini активны' : 'Требуется настройка API'}
                   </h2>
                   <p className="text-sm text-muted">{status.message}</p>
                 </div>
@@ -174,7 +172,7 @@ export default function StatusPage() {
           {/* Service Details */}
           {status && (
             <div className="grid grid--2" style={{ gap: '16px' }}>
-              {/* OpenRouter Status */}
+              {/* Gemini Status */}
               <motion.div
                 className="card"
                 initial={{ opacity: 0, y: 20 }}
@@ -184,26 +182,22 @@ export default function StatusPage() {
                 <div className="card__header">
                   <div className="flex items-center gap-2">
                     <Bot size={20} style={{ color: 'var(--accent-purple)' }} />
-                    <h3 className="card__title">OpenRouter AI</h3>
+                    <h3 className="card__title">Google Gemini AI</h3>
                   </div>
-                  {getStatusIcon(status.checks.openrouter.configured)}
+                  {getStatusIcon(status.checks.gemini.configured)}
                 </div>
                 <div className="card__body">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">API ключ настроен</span>
-                      {getStatusIcon(status.checks.openrouter.configured)}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Site URL настроен</span>
-                      {getStatusIcon(status.checks.openrouter.hasSiteUrl)}
+                      <span className="text-sm">API ключ (GOOGLE_AI_API_KEY)</span>
+                      {getStatusIcon(status.checks.gemini.configured)}
                     </div>
                   </div>
                 </div>
                 <div className="card__footer">
-                  {!status.checks.openrouter.configured ? (
+                  {!status.checks.gemini.configured ? (
                     <a
-                      href="https://openrouter.ai/keys"
+                      href="https://aistudio.google.com/app/apikey"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn--primary btn--sm"
@@ -215,7 +209,7 @@ export default function StatusPage() {
                   ) : (
                     <span className="text-sm text-muted flex items-center gap-1">
                       <CheckCircle2 size={14} style={{ color: 'var(--accent-green)' }} />
-                      Готово к работе
+                      Готово к работе (Flash 1.5)
                     </span>
                   )}
                 </div>
@@ -338,7 +332,7 @@ export default function StatusPage() {
           )}
 
           {/* AI Assistant Test */}
-          {status?.checks.openrouter.configured && (
+          {status?.checks.gemini.configured && (
             <motion.div
               className="glass glass--strong"
               style={{ marginTop: '32px', padding: '24px' }}
@@ -348,11 +342,11 @@ export default function StatusPage() {
             >
               <h3 className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
                 <Bot size={20} style={{ color: 'var(--accent-purple)' }} />
-                Тест AI помощника
+                Тест Gemini AI
               </h3>
               <p className="text-sm text-muted" style={{ marginBottom: '16px' }}>
                 Нажмите на значок AI помощника в правом нижнем углу экрана и отправьте тестовое
-                сообщение, чтобы проверить работу OpenRouter API.
+                сообщение, чтобы проверить работу Google Gemini API.
               </p>
               <div className="flex gap-3">
                 <a href="/" className="btn btn--secondary">
