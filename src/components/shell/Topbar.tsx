@@ -28,12 +28,13 @@
  *  - Все строки локализованы через `t(...)` (Req 24.2).
  */
 
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import {
   Bell,
   Menu,
   Search,
   User,
+  LogOut,
   LayoutDashboard,
   MessageSquare,
   ListTodo,
@@ -42,12 +43,14 @@ import {
   UserCircle,
   Activity,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Drawer } from '@/components/ui/Drawer'
 import { ThemeToggle } from '@/components/shell/ThemeToggle'
 import { t } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 import './Topbar.css'
 
 export interface TopbarNavItem {
@@ -118,11 +121,22 @@ export function Topbar({
   className,
 }: TopbarProps) {
   const items = navItems ?? getDefaultNavItems()
+  const router = useRouter()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   const openDrawer = useCallback(() => setDrawerOpen(true), [])
   const closeDrawer = useCallback(() => setDrawerOpen(false), [])
+  const toggleProfileMenu = useCallback(() => setProfileMenuOpen((v) => !v), [])
+
+  const handleSignOut = useCallback(async () => {
+    setProfileMenuOpen(false)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }, [router])
 
   return (
     <header
@@ -174,15 +188,42 @@ export function Topbar({
           variant="ghost"
           size="md"
           data-ds="topbar-notifications"
+          onClick={() => router.push('/profile')}
         />
         <ThemeToggle variant="ghost" size="md" />
-        <IconButton
-          icon={<User size={18} aria-hidden="true" />}
-          aria-label={t('a11y.profileMenu')}
-          variant="ghost"
-          size="md"
-          data-ds="topbar-profile"
-        />
+        <div className="topbar__profile-wrapper" ref={profileRef}>
+          <IconButton
+            icon={<User size={18} aria-hidden="true" />}
+            aria-label={t('a11y.profileMenu')}
+            variant="ghost"
+            size="md"
+            data-ds="topbar-profile"
+            onClick={toggleProfileMenu}
+            aria-expanded={profileMenuOpen}
+          />
+          {profileMenuOpen && (
+            <div className="topbar__profile-menu" role="menu">
+              <a
+                href="/profile"
+                className="topbar__profile-menu-item"
+                role="menuitem"
+                onClick={() => setProfileMenuOpen(false)}
+              >
+                <UserCircle size={16} aria-hidden="true" />
+                <span>{t('nav.profile')}</span>
+              </a>
+              <button
+                type="button"
+                className="topbar__profile-menu-item topbar__profile-menu-item--danger"
+                role="menuitem"
+                onClick={handleSignOut}
+              >
+                <LogOut size={16} aria-hidden="true" />
+                <span>{t('auth.logout')}</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Mobile Drawer: full list of navigation routes (Req 8.6). */}

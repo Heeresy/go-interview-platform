@@ -25,10 +25,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
+import Link from 'next/link'
 
 import { AppShell, AuthGate } from '@/components/shell'
 import { MockList, MockFilters } from '@/components/mock'
 import type { MockSummary } from '@/components/mock'
+import { Button } from '@/components/ui'
 import { createClient } from '@/lib/supabase/client'
 import { t } from '@/lib/i18n'
 import type { MockSet } from '@/types/database'
@@ -45,8 +47,9 @@ const PAGE_STYLE: CSSProperties = {
 
 const HEADER_STYLE: CSSProperties = {
   display: 'flex',
-  flexDirection: 'column',
-  gap: 'var(--space-1)',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 'var(--space-4)',
   margin: 0,
 }
 
@@ -58,6 +61,10 @@ const TITLE_STYLE: CSSProperties = {
   letterSpacing: '-0.01em',
   color: 'var(--border-900)',
   margin: 0,
+}
+
+const CREATE_LINK_STYLE: CSSProperties = {
+  textDecoration: 'none',
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -148,6 +155,11 @@ function MockRouteContent() {
     <div style={PAGE_STYLE} data-ds="mock-page">
       <header style={HEADER_STYLE}>
         <h1 style={TITLE_STYLE}>{t('mock.list.title')}</h1>
+        <Link href="/mock/create" style={CREATE_LINK_STYLE}>
+          <Button variant="primary" size="md" tabIndex={-1}>
+            {t('mock.create.submit')}
+          </Button>
+        </Link>
       </header>
 
       <MockFilters

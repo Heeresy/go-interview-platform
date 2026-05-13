@@ -221,6 +221,13 @@ function NextTaskContent({ task }: { task: NextTaskData }) {
     const difficultyLabel =
         DIFFICULTY_LABELS[task.difficulty] ?? String(task.difficulty)
 
+    // Only link to the specific task page if the ID looks like a valid UUID.
+    // Mock/placeholder IDs (e.g. 'mock-task-two-sum') would lead to a 404,
+    // so fall back to the general tasks list.
+    const isValidUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.id)
+    const ctaHref = isValidUuid ? `/tasks/${task.id}` : '/tasks'
+
     return (
         <>
             <h2 style={TITLE_STYLE}>{t('dashboard.nextTask.title')}</h2>
@@ -236,7 +243,7 @@ function NextTaskContent({ task }: { task: NextTaskData }) {
             </div>
             <div style={CTA_ROW_STYLE}>
                 <Link
-                    href={`/tasks/${task.id}`}
+                    href={ctaHref}
                     style={CTA_LINK_STYLE}
                     data-testid="next-task-cta"
                     data-cta="next-task"

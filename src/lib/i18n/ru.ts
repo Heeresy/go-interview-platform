@@ -146,6 +146,7 @@ export const ru = {
   'auth.login.error': 'Не удалось войти. Проверьте данные и попробуйте ещё раз.',
   'auth.login.redirectFailed':
     'Не удалось перейти в кабинет. Попробуйте ещё раз.',
+  'auth.logout': 'Выйти',
 
   // dashboard cards
   'dashboard.progress.title': 'Ваш прогресс',

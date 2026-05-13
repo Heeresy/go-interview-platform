@@ -180,7 +180,7 @@ function TrainerQuickCardInner({
                         })}
                     </p>
                     <Link
-                        href="/trainer"
+                        href={`/trainer?level=${data?.currentLevel ?? 1}`}
                         style={LINK_STYLE}
                         data-testid="trainer-continue-link"
                         aria-label={t('common.continue')}

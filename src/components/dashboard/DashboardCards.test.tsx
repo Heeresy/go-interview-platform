@@ -129,7 +129,7 @@ describe('<NextTaskCard />', () => {
         const cta = (await findByTestId(
             'next-task-cta',
         )) as HTMLAnchorElement
-        expect(cta.getAttribute('href')).toBe('/tasks/mock-task-two-sum')
+        expect(cta.getAttribute('href')).toBe('/tasks')
         expect(cta.textContent).toContain(t('dashboard.nextTask.cta'))
     })
 
@@ -251,6 +251,6 @@ describe('state isolation between Dashboard cards (Req 5.6)', () => {
         const cta = (await findByTestId(
             'next-task-cta',
         )) as HTMLAnchorElement
-        expect(cta.getAttribute('href')).toBe('/tasks/mock-task-two-sum')
+        expect(cta.getAttribute('href')).toBe('/tasks')
     })
 })

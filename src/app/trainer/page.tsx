@@ -29,16 +29,24 @@
  * к моменту рендера middleware уже редиректнул guest'а на `/login`.
  */
 
+import { useSearchParams } from 'next/navigation'
+
 import { AppShell, AuthGate } from '@/components/shell'
 import { TrainerShell } from '@/components/trainer'
+import type { Difficulty } from '@/types/database'
 
 export default function TrainerPage() {
+  const searchParams = useSearchParams()
+  const levelParam = Number(searchParams.get('level'))
+  const initialLevel: Difficulty =
+    levelParam >= 1 && levelParam <= 5 ? (levelParam as Difficulty) : 1
+
   return (
     <AuthGate
       guest={null}
       authenticated={({ user }) => (
         <AppShell user={user}>
-          <TrainerShell />
+          <TrainerShell initialLevel={initialLevel} />
         </AppShell>
       )}
     />

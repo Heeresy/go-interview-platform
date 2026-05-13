@@ -158,7 +158,7 @@ const EDITOR_FILE_NAME_STYLE: CSSProperties = {
 
 const EDITOR_WRAPPER_STYLE: CSSProperties = {
     flex: 1,
-    minHeight: 0,
+    minHeight: '400px',
     display: 'flex',
 }
 
