@@ -317,7 +317,8 @@ function PanelShell({
 }: {
   state: string
   children: ReactNode
-} & Record<string, string | boolean | undefined>) {
+  [key: string]: unknown
+}) {
   return (
     <GlassPanel
       style={PANEL_STYLE}
