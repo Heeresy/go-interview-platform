@@ -296,6 +296,10 @@ const WRAPPER_STYLE: CSSProperties = {
   border: '1px solid var(--border-200)',
   overflow: 'hidden',
   background: 'var(--bg-400)',
+  width: '100%',
+  height: '100%',
+  minHeight: '400px',
+  color: 'initial',
 }
 
 export function LazyMonacoEditor({
@@ -342,8 +346,8 @@ export function LazyMonacoEditor({
         try {
           monaco.editor.setTheme(UI_REDESIGN_DARK_THEME)
         } catch {
-          // See `registerUiRedesignDarkTheme` — non-fatal; Monaco stays
-          // on whatever theme it managed to resolve at mount time.
+          // Fallback to vs-dark if custom theme fails
+          try { monaco.editor.setTheme('vs-dark') } catch { /* noop */ }
         }
       }
       onMount?.(editorInstance, monaco)

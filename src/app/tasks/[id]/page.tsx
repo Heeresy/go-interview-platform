@@ -540,7 +540,7 @@ function TaskDetailRouteContent({ taskId }: TaskDetailRouteContentProps) {
             </header>
             <div style={EDITOR_WRAPPER_STYLE}>
                 <LazyMonacoEditor
-                    height="100%"
+                    height="400px"
                     defaultLanguage="go"
                     value={code}
                     onChange={(v) => setCode(v ?? '')}

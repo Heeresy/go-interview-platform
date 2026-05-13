@@ -41,6 +41,9 @@
   border-radius: 0;
   border-inline: 0;
   border-top: 0;
+
+  /* Override .glass overflow:hidden so profile dropdown is visible */
+  overflow: visible;
 }
 
 .topbar__left {
@@ -194,7 +197,7 @@
   position: absolute;
   top: calc(100% + var(--space-2));
   right: 0;
-  z-index: var(--z-dropdown, 100);
+  z-index: 9999;
   min-width: 180px;
   padding: var(--space-2);
   border-radius: var(--radius-lg);
