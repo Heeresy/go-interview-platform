@@ -64,27 +64,31 @@ export function AuthGate({ guest, authenticated, loading = null }: AuthGateProps
     let active = true
     const supabase = createClient()
 
-    // 1) Initial fetch — единожды на mount. Согласно @supabase/ssr,
-    //    getUser() валидирует сессию и возвращает свежего пользователя
-    //    (или `null`, если нет валидной сессии).
-    supabase.auth
-      .getUser()
-      .then(({ data }) => {
+    // 1) Initial fetch with retry — after OAuth redirect, cookies may not
+    //    be immediately available to the browser client. We retry once
+    //    after a short delay if the first attempt returns null.
+    async function checkUser(retryCount = 0) {
+      try {
+        const { data } = await supabase.auth.getUser()
         if (!active) return
         const user = data.user
-        setState(
-          user
-            ? { status: 'authenticated', user }
-            : { status: 'guest' },
-        )
-      })
-      .catch(() => {
-        // Сетевой/любой сбой при инициализации — считаем гостем.
-        // Последующий onAuthStateChange всё равно скорректирует
-        // состояние, если у пользователя валидная сессия.
+        if (user) {
+          setState({ status: 'authenticated', user })
+        } else if (retryCount < 1) {
+          // Retry once after 500ms — covers race with server-set cookies
+          setTimeout(() => {
+            if (active) checkUser(retryCount + 1)
+          }, 500)
+        } else {
+          setState({ status: 'guest' })
+        }
+      } catch {
         if (!active) return
         setState({ status: 'guest' })
-      })
+      }
+    }
+
+    checkUser()
 
     // 2) Подписка на изменения сессии. Переключает ветки без
     //    router.push и без полной перезагрузки — чистый re-render.
