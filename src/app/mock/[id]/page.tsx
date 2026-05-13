@@ -1,274 +1,282 @@
 'use client'
 
-import { useState, useEffect, useCallback, use } from 'react'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Star, Clock, User, BookOpen, Code, ChevronRight } from 'lucide-react'
+/**
+ * `/mock/[id]` — Mock_Module detail route.
+ *
+ * Перестроено под Design System v2 (task 20.4; Requirements 17.1, 17.6,
+ * 21.1, 21.3, 21.5, 22.4, 22.5):
+ *
+ *   - Авторизованный пользователь видит контент внутри `AppShell`;
+ *     гость получает `null` (middleware перенаправляет на `/login`).
+ *   - Контент собирается из публичного API `@/components/mock`
+ *     (барреля) — Req 22.4, 22.5.
+ *   - Старая разметка (inline-стили / motion-обёртки / styled-jsx)
+ *     удалена полностью — её место заняли DS v2 примитивы:
+ *     `<MockDetail />`, `<RatingControl />`, `<CommentThread />`
+ *     (Req 21.1, 21.5).
+ *   - Бизнес-логика (Supabase-запросы, схема БД) **не меняется** —
+ *     данные тянутся ровно теми же запросами (Req 21.3).
+ *   - `useParams()` из `next/navigation` для получения mock ID.
+ */
+
+import { useCallback, useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import type { CSSProperties } from 'react'
+
+import { AppShell, AuthGate } from '@/components/shell'
+import {
+  MockDetail,
+  RatingControl,
+  CommentThread,
+} from '@/components/mock'
+import type { MockDetailSummary, Comment } from '@/components/mock'
 import { createClient } from '@/lib/supabase/client'
-import { cn, getDifficultyBadgeClass, getDifficultyLabel, formatTimeAgo } from '@/lib/utils'
-import type { MockSet, Question, Task } from '@/types/database'
+import { t } from '@/lib/i18n'
+import type { MockSet } from '@/types/database'
 
-export default function MockDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params)
-    const [set, setSet] = useState<MockSet | null>(null)
-    const [questions, setQuestions] = useState<Question[]>([])
-    const [tasks, setTasks] = useState<Task[]>([])
-    const [loading, setLoading] = useState(true)
+// ── Layout (DS tokens only; Req 1.8) ─────────────────────────────────────
 
-    const loadData = useCallback(async () => {
-        const supabase = createClient()
+const PAGE_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-6)',
+  width: '100%',
+  minWidth: 0,
+}
 
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Маппинг Supabase `MockSet` → UI `MockDetailSummary` (Req 22.4).
+ */
+function toDetailSummary(set: MockSet): MockDetailSummary {
+  return {
+    id: set.id,
+    title: set.title,
+    description: set.description ?? null,
+    difficulty: set.difficulty,
+    category: set.author?.display_name || set.author?.username || '',
+    averageRating: set.avg_rating ?? 0,
+    commentCount: set.total_ratings ?? 0,
+  }
+}
+
+// ── Inner authenticated content ──────────────────────────────────────────
+
+function MockDetailRouteContent() {
+  const params = useParams()
+  const id = params.id as string
+
+  const [mock, setMock] = useState<MockDetailSummary | null>(null)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [commentsLoading, setCommentsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+  const [commentsError, setCommentsError] = useState<Error | null>(null)
+  const [userRating, setUserRating] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    let active = true
+    const supabase = createClient()
+
+    async function load() {
+      try {
         // 1. Fetch Mock Set
-        const { data: setData } = await supabase
-            .from('mock_sets')
-            .select('*, author:profiles(*)')
-            .eq('id', id)
-            .single()
+        const { data: setData, error: setErr } = await supabase
+          .from('mock_sets')
+          .select('*, author:profiles(*)')
+          .eq('id', id)
+          .single()
 
-        if (setData) {
-            setSet(setData)
+        if (!active) return
+        if (setErr) throw setErr
+        if (!setData) throw new Error('Not found')
 
-            // 2. Fetch Questions
-            if (setData.question_ids && setData.question_ids.length > 0) {
-                const { data: qData } = await supabase
-                    .from('questions')
-                    .select('*, category:categories(*)')
-                    .in('id', setData.question_ids)
-                if (qData) setQuestions(qData)
-            }
+        setMock(toDetailSummary(setData))
+        setError(null)
 
-            // 3. Fetch Tasks
-            if (setData.task_ids && setData.task_ids.length > 0) {
-                const { data: tData } = await supabase
-                    .from('tasks')
-                    .select('*, category:categories(*)')
-                    .in('id', setData.task_ids)
-                if (tData) setTasks(tData)
-            }
+        // 2. Fetch user's existing rating
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && active) {
+          const { data: ratingData } = await supabase
+            .from('mock_ratings')
+            .select('rating')
+            .eq('mock_set_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+          if (active && ratingData) {
+            setUserRating(ratingData.rating)
+          }
         }
-        setLoading(false)
-    }, [id])
-
-    useEffect(() => {
-        const init = async () => {
-            await Promise.resolve()
-            loadData()
-        }
-        init()
-    }, [loadData])
-
-    if (loading) {
-        return (
-            <div className="page">
-                <div className="container">
-                    <div className="skeleton" style={{ height: 400, borderRadius: 'var(--radius-lg)' }} />
-                </div>
-            </div>
-        )
+      } catch (err) {
+        if (!active) return
+        setError(err instanceof Error ? err : new Error(String(err)))
+      } finally {
+        if (active) setIsLoading(false)
+      }
     }
 
-    if (!set) {
-        return (
-            <div className="page">
-                <div className="container empty-state">
-                    <p className="empty-state__title">MOCK-сет не найден</p>
-                    <Link href="/mock" className="btn btn--secondary">Назад к списку</Link>
-                </div>
-            </div>
-        )
+    async function loadComments() {
+      try {
+        const { data, error: err } = await supabase
+          .from('mock_comments')
+          .select('*, author:profiles(*)')
+          .eq('mock_set_id', id)
+          .order('created_at', { ascending: true })
+
+        if (!active) return
+        if (err) throw err
+
+        const mapped: Comment[] = (data ?? []).map((c: any) => ({
+          id: c.id,
+          author: {
+            id: c.author?.id ?? c.user_id,
+            name: c.author?.display_name || c.author?.username || '',
+            avatarUrl: c.author?.avatar_url ?? undefined,
+          },
+          createdAt: c.created_at,
+          content: c.content,
+        }))
+
+        setComments(mapped)
+        setCommentsError(null)
+      } catch (err) {
+        if (!active) return
+        setCommentsError(err instanceof Error ? err : new Error(String(err)))
+      } finally {
+        if (active) setCommentsLoading(false)
+      }
     }
 
+    void load()
+    void loadComments()
+
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  const handleRate = useCallback(
+    async (value: number) => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error: err } = await supabase
+        .from('mock_ratings')
+        .upsert(
+          { mock_set_id: id, user_id: user.id, rating: value },
+          { onConflict: 'mock_set_id,user_id' },
+        )
+
+      if (err) throw err
+      setUserRating(value)
+    },
+    [id],
+  )
+
+  const handlePostComment = useCallback(
+    async (text: string) => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { data, error: err } = await supabase
+        .from('mock_comments')
+        .insert({ mock_set_id: id, user_id: user.id, content: text })
+        .select('*, author:profiles(*)')
+        .single()
+
+      if (err) throw err
+
+      if (data) {
+        const newComment: Comment = {
+          id: data.id,
+          author: {
+            id: data.author?.id ?? data.user_id,
+            name: data.author?.display_name || data.author?.username || '',
+            avatarUrl: data.author?.avatar_url ?? undefined,
+          },
+          createdAt: data.created_at,
+          content: data.content,
+        }
+        setComments((prev) => [...prev, newComment])
+      }
+    },
+    [id],
+  )
+
+  if (isLoading) {
     return (
-        <div className="page">
-            <div className="container">
-                <Link href="/mock" className="back-link">
-                    <ArrowLeft size={16} /> Ко всем сетам
-                </Link>
-
-                <div className="mock-grid">
-                    {/* Left side: Info */}
-                    <div className="mock-info">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="glass glass--strong"
-                            style={{ padding: 'var(--space-8)' }}
-                        >
-                            <div className="flex items-center gap-3" style={{ marginBottom: 'var(--space-6)' }}>
-                                <span className={cn('badge', getDifficultyBadgeClass(set.difficulty))}>
-                                    {getDifficultyLabel(set.difficulty)}
-                                </span>
-                                <div className="flex items-center gap-1 text-sm font-semibold">
-                                    <Star size={14} style={{ color: 'var(--accent-yellow)', fill: 'var(--accent-yellow)' }} />
-                                    <span>{set.avg_rating.toFixed(1)}</span>
-                                </div>
-                            </div>
-
-                            <h1 className="mock-title">{set.title}</h1>
-                            <p className="mock-desc">{set.description}</p>
-
-                            <div className="mock-meta">
-                                <div className="mock-meta__item">
-                                    <User size={16} />
-                                    <span>{set.author?.display_name || set.author?.username || 'Аноним'}</span>
-                                </div>
-                                <div className="mock-meta__item">
-                                    <Clock size={16} />
-                                    <span>{formatTimeAgo(set.created_at)}</span>
-                                </div>
-                            </div>
-
-                            <div style={{ marginTop: 'var(--space-8)' }}>
-                                <button className="btn btn--primary btn--lg w-full">
-                                    Начать собеседование
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-
-                    {/* Right side: Content List */}
-                    <div className="mock-content">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="flex flex-col gap-6"
-                        >
-                            <section>
-                                <h2 className="section-title">
-                                    <BookOpen size={20} />
-                                    Вопросы ({questions.length})
-                                </h2>
-                                <div className="content-list">
-                                    {questions.map((q) => (
-                                        <Link href={`/questions/${q.id}`} key={q.id} className="content-item glass card">
-                                            <div className="flex-1">
-                                                <h4 className="content-item__title">{q.title}</h4>
-                                                {q.category && <span className="text-xs text-muted">{q.category.name}</span>}
-                                            </div>
-                                            <ChevronRight size={16} className="text-muted" />
-                                        </Link>
-                                    ))}
-                                </div>
-                            </section>
-
-                            {tasks.length > 0 && (
-                                <section>
-                                    <h2 className="section-title">
-                                        <Code size={20} />
-                                        Задачи ({tasks.length})
-                                    </h2>
-                                    <div className="content-list">
-                                        {tasks.map((t) => (
-                                            <Link href={`/tasks/${t.id}`} key={t.id} className="content-item glass card">
-                                                <div className="flex-1">
-                                                    <h4 className="content-item__title">{t.title}</h4>
-                                                    {t.category && <span className="text-xs text-muted">{t.category.name}</span>}
-                                                </div>
-                                                <ChevronRight size={16} className="text-muted" />
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                        </motion.div>
-                    </div>
-                </div>
-            </div>
-
-            <style jsx>{`
-                .back-link {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: var(--space-2);
-                    color: var(--text-secondary);
-                    font-size: var(--font-size-sm);
-                    margin-bottom: var(--space-8);
-                    text-decoration: none;
-                    transition: color var(--duration-fast);
-                }
-                .back-link:hover { color: var(--color-primary); }
-
-                .mock-grid {
-                    display: grid;
-                    grid-template-columns: 400px 1fr;
-                    gap: var(--space-8);
-                    align-items: start;
-                }
-
-                .mock-title {
-                    font-size: var(--font-size-3xl);
-                    font-weight: 800;
-                    margin-bottom: var(--space-4);
-                    line-height: 1.2;
-                }
-
-                .mock-desc {
-                    color: var(--text-secondary);
-                    font-size: var(--font-size-md);
-                    line-height: var(--line-height-relaxed);
-                    margin-bottom: var(--space-6);
-                }
-
-                .mock-meta {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--space-2);
-                    padding-top: var(--space-6);
-                    border-top: 1px solid var(--border-color);
-                }
-
-                .mock-meta__item {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--space-2);
-                    color: var(--text-muted);
-                    font-size: var(--font-size-sm);
-                }
-
-                .section-title {
-                    display: flex;
-                    align-items: center;
-                    gap: var(--space-3);
-                    font-size: var(--font-size-xl);
-                    font-weight: 700;
-                    margin-bottom: var(--space-4);
-                }
-
-                .content-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--space-3);
-                }
-
-                .content-item {
-                    display: flex;
-                    align-items: center;
-                    padding: var(--space-4) var(--space-5);
-                    text-decoration: none;
-                    color: inherit;
-                    transition: all var(--duration-fast);
-                }
-                .content-item:hover {
-                    transform: translateX(4px);
-                    border-color: var(--color-primary);
-                }
-
-                .content-item__title {
-                    font-weight: 600;
-                    font-size: var(--font-size-sm);
-                    margin-bottom: 2px;
-                }
-
-                @media (max-width: 1024px) {
-                    .mock-grid {
-                        grid-template-columns: 1fr;
-                    }
-                    .mock-info {
-                        position: static;
-                    }
-                }
-            `}</style>
-        </div>
+      <div style={PAGE_STYLE} data-ds="mock-detail-page" data-state="loading">
+        <MockDetail
+          mock={{
+            id: '',
+            title: '',
+            description: null,
+            difficulty: 1,
+            category: '',
+            averageRating: 0,
+            commentCount: 0,
+          }}
+        />
+      </div>
     )
+  }
+
+  if (error || !mock) {
+    return (
+      <div style={PAGE_STYLE} data-ds="mock-detail-page" data-state="error">
+        <MockDetail
+          mock={{
+            id: '',
+            title: t('state.error.unknown'),
+            description: null,
+            difficulty: 1,
+            category: '',
+            averageRating: 0,
+            commentCount: 0,
+          }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div style={PAGE_STYLE} data-ds="mock-detail-page">
+      <MockDetail
+        mock={mock}
+        ratingControl={
+          <RatingControl
+            value={userRating}
+            onChange={handleRate}
+          />
+        }
+        commentThread={
+          <CommentThread
+            comments={comments}
+            onPost={handlePostComment}
+            isLoading={commentsLoading}
+            error={commentsError}
+          />
+        }
+      />
+    </div>
+  )
+}
+
+// ── Page export ──────────────────────────────────────────────────────────
+
+export default function MockDetailPage() {
+  return (
+    <AuthGate
+      guest={null}
+      authenticated={({ user }) => (
+        <AppShell user={user}>
+          <MockDetailRouteContent />
+        </AppShell>
+      )}
+    />
+  )
 }

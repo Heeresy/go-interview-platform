@@ -1,323 +1,202 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { Search, Filter, ChevronRight, MessageSquareCode, Sparkles } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { cn, getDifficultyBadgeClass, getDifficultyLabel, truncate } from '@/lib/utils'
-import { AuraCard } from '@/components/ui/AuraCard'
-import type { Question, Category, Difficulty } from '@/types/database'
+/**
+ * `/questions` — Questions_Module index route.
+ *
+ * Перестроено под Design System v2 (task 17.7; Requirements 14.1, 21.1, 21.5,
+ * 22.4, 22.5):
+ *
+ *   - Авторизованный пользователь видит контент внутри `AppShell`;
+ *     гость уходит на `PublicLanding` через клиентский `AuthGate`,
+ *     без `router.push` и без полной перезагрузки страницы (Req 6.8, 5.7).
+ *   - Контент собирается из публичного API `@/components/questions`
+ *     (барреля), без обращения во внутренние файлы — Req 22.4, 22.5.
+ *   - Старая разметка (Navbar / AIAssistant / inline-стили / motion-обёртки)
+ *     удалена полностью — её место заняли DS v2 примитивы и модульные
+ *     компоненты `<QuestionFilters />` + `<QuestionsList />` (Req 21.1, 21.5).
+ *   - Бизнес-логика (Supabase-запросы, схема БД, контракт `/api/evaluate`)
+ *     **не меняется** — данные тянутся ровно теми же запросами
+ *     (`categories`, `questions` с `category:categories(*)`), просто без
+ *     legacy-UI вокруг.
+ *
+ * Контракт фильтрации:
+ *   - `search` — клиентский full-text по `title` + `description` (case-
+ *     insensitive). Фильтр на сервер не уходит — список вопросов
+ *     невелик и уже загружен; так совпадает поведение с прежней
+ *     legacy-страницей (Req 21.2: контракт без изменений).
+ *   - `selectedTags` — массив имён категорий. UI чипы рендерит
+ *     `<QuestionFilters />`; матчинг идёт по `question.category?.name`.
+ *     Difficulty-фильтр не выставляется на этом маршруте — Design v2
+ *     ограничивает фильтр-панель «поиск + теги» (см. design.md
+ *     Questions_Module: «sticky glass filter panel», Req 14.4).
+ */
 
-export default function QuestionsPage() {
+import { useEffect, useMemo, useState } from 'react'
+
+import { AppShell, AuthGate } from '@/components/shell'
+import { QuestionFilters, QuestionsList } from '@/components/Questions'
+import { PublicLanding } from '@/components/landing'
+import { createClient } from '@/lib/supabase/client'
+import { t } from '@/lib/i18n'
+import type { Category, Question } from '@/types/database'
+
+import type { CSSProperties } from 'react'
+
+// ── Layout (DS tokens only; Req 1.8) ─────────────────────────────────────
+
+const PAGE_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-6)',
+  width: '100%',
+  minWidth: 0,
+}
+
+const HEADER_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-1)',
+  margin: 0,
+}
+
+const TITLE_STYLE: CSSProperties = {
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--fs-2xl)',
+  fontWeight: 'var(--fw-semibold)',
+  lineHeight: 1.2,
+  letterSpacing: '-0.01em',
+  color: 'var(--border-900)',
+  margin: 0,
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Клиентский матчер «вопрос проходит фильтр».
+ *
+ * - `search` — substring (lowercase) в `title` + `description`. Пустая
+ *    строка пропускает все вопросы.
+ * - `tags`   — пересечение по `question.category?.name`. Пустой массив
+ *    пропускает все вопросы.
+ */
+function matchesQuestion(
+  question: Question,
+  searchLower: string,
+  tags: string[],
+): boolean {
+  if (searchLower.length > 0) {
+    const haystack = `${question.title} ${question.description}`.toLowerCase()
+    if (!haystack.includes(searchLower)) return false
+  }
+  if (tags.length > 0) {
+    const categoryName = question.category?.name
+    if (!categoryName || !tags.includes(categoryName)) return false
+  }
+  return true
+}
+
+// ── Inner authenticated content ──────────────────────────────────────────
+
+/**
+ * Контент, рендерящийся **только для авторизованного пользователя**
+ * внутри `AppShell`. Вынесен в отдельный компонент, чтобы не
+ * монтировать Supabase-запросы и хуки до прохождения `AuthGate`.
+ */
+function QuestionsRouteContent() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
-  const loadData = useCallback(async () => {
-    console.log('[Questions] Loading data...')
-    setError(null)
+  const [search, setSearch] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+  // Initial load: categories + questions. Без useCallback и без зависимостей —
+  // фильтрация на этой странице клиентская, дополнительные round-trip'ы
+  // на смену search / tags не нужны (Req 21.2 — контракт API без изменений).
+  useEffect(() => {
+    let active = true
     const supabase = createClient()
 
-    try {
-      // Load categories
-      const { data: cats, error: catsError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order')
-      if (catsError) throw catsError
-      if (cats) {
-        setCategories(cats)
-      }
+    async function load() {
+      try {
+        const [catsRes, qRes] = await Promise.all([
+          supabase.from('categories').select('*').order('sort_order'),
+          supabase
+            .from('questions')
+            .select('*, category:categories(*)')
+            .order('difficulty')
+            .order('created_at', { ascending: false }),
+        ])
 
-      // Load questions
-      let query = supabase
-        .from('questions')
-        .select('*, category:categories(*)')
-        .order('difficulty')
-        .order('created_at', { ascending: false })
+        if (!active) return
 
-      if (selectedCategory) {
-        query = query.eq('category_id', selectedCategory)
-      }
-      if (selectedDifficulty) {
-        query = query.eq('difficulty', selectedDifficulty)
-      }
+        if (catsRes.error) throw catsRes.error
+        if (qRes.error) throw qRes.error
 
-      const { data, error: questionsError } = await query
-      if (questionsError) throw questionsError
-
-      if (data) {
-        setQuestions(data)
-      } else {
-        setQuestions([])
+        setCategories(catsRes.data ?? [])
+        setQuestions(qRes.data ?? [])
+        setError(null)
+      } catch (err) {
+        if (!active) return
+        setError(err instanceof Error ? err : new Error(String(err)))
+      } finally {
+        if (active) setIsLoading(false)
       }
-    } catch (err) {
-      console.error('[Questions] Error loading data:', err)
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
-    } finally {
-      setLoading(false)
     }
-  }, [selectedCategory, selectedDifficulty])
 
-  useEffect(() => {
-    const init = async () => {
-      await Promise.resolve()
-      loadData()
+    void load()
+
+    return () => {
+      active = false
     }
-    init()
-  }, [loadData])
+  }, [])
 
-  const filtered = questions.filter(
-    (q) =>
-      q.title.toLowerCase().includes(search.toLowerCase()) ||
-      q.description.toLowerCase().includes(search.toLowerCase())
+  const availableTags = useMemo<string[]>(
+    () => categories.map((c) => c.name),
+    [categories],
   )
 
+  const filtered = useMemo<Question[]>(() => {
+    const searchLower = search.trim().toLowerCase()
+    if (searchLower.length === 0 && selectedTags.length === 0) return questions
+    return questions.filter((q) => matchesQuestion(q, searchLower, selectedTags))
+  }, [questions, search, selectedTags])
+
   return (
-    <div className="page">
-      <div className="container">
-        <div className="page__header">
-          <h1 className="page__title">Вопросы с собеседований</h1>
-          <p className="page__subtitle">Открытые вопросы с AI-оценкой ваших ответов</p>
-        </div>
+    <div style={PAGE_STYLE} data-ds="questions-page">
+      <header style={HEADER_STYLE}>
+        <h1 style={TITLE_STYLE}>{t('questions.list.title')}</h1>
+      </header>
 
-        {/* Filters */}
-        <div className="filters glass glass--strong">
-          <div className="filters__search">
-            <Search size={18} className="filters__search-icon" />
-            <input
-              type="text"
-              className="input"
-              placeholder="Поиск вопросов..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="filters__row">
-            <div className="filters__group">
-              <Filter size={14} />
-              <span className="text-sm text-muted">Категория:</span>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  className={cn('badge', !selectedCategory && 'badge--info')}
-                  onClick={() => setSelectedCategory(null)}
-                  style={{ cursor: 'pointer', border: 'none' }}
-                  aria-label="Показать все категории"
-                >
-                  Все
-                </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    className={cn('badge', selectedCategory === cat.id && 'badge--info')}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    style={{ cursor: 'pointer', border: 'none' }}
-                    aria-pressed={selectedCategory === cat.id}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="filters__group">
-              <span className="text-sm text-muted">Сложность:</span>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  className={cn('badge', !selectedDifficulty && 'badge--info')}
-                  onClick={() => setSelectedDifficulty(null)}
-                  style={{ cursor: 'pointer', border: 'none' }}
-                  aria-label="Показать все уровни сложности"
-                >
-                  Все
-                </button>
-                {([1, 2, 3, 4, 5] as Difficulty[]).map((d) => (
-                  <button
-                    key={d}
-                    className={cn('badge', selectedDifficulty === d && getDifficultyBadgeClass(d))}
-                    onClick={() => setSelectedDifficulty(d)}
-                    style={{ cursor: 'pointer', border: 'none' }}
-                    aria-pressed={selectedDifficulty === d}
-                  >
-                    {getDifficultyLabel(d)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+      <QuestionFilters
+        search={search}
+        onSearchChange={setSearch}
+        selectedTags={selectedTags}
+        onTagsChange={setSelectedTags}
+        availableTags={availableTags}
+      />
 
-        {/* Error State */}
-        {error && (
-          <div
-            className="glass"
-            style={{
-              padding: 'var(--space-6)',
-              marginTop: 'var(--space-6)',
-              background: 'rgba(248, 113, 113, 0.1)',
-              border: '1px solid var(--accent-red)',
-            }}
-          >
-            <div className="flex items-center gap-3" style={{ color: 'var(--accent-red)' }}>
-              <MessageSquareCode size={24} />
-              <div>
-                <p style={{ fontWeight: 600 }}>Ошибка загрузки</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Questions List */}
-        {loading ? (
-          <div className="questions-grid" style={{ marginTop: 'var(--space-6)' }}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="skeleton question-skeleton" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div
-            className="empty-state glass"
-            style={{ padding: 'var(--space-12)', marginTop: 'var(--space-6)', textAlign: 'center' }}
-          >
-            <MessageSquareCode
-              size={48}
-              style={{ color: 'var(--accent-purple)', marginBottom: 'var(--space-4)' }}
-            />
-            <p
-              className="empty-state__title"
-              style={{
-                fontSize: 'var(--font-size-xl)',
-                fontWeight: 600,
-                marginBottom: 'var(--space-2)',
-              }}
-            >
-              Вопросы не найдены
-            </p>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Попробуйте изменить фильтры или поисковый запрос
-            </p>
-          </div>
-        ) : (
-          <div className="questions-grid" style={{ marginTop: 'var(--space-6)' }}>
-            {filtered.map((question, i) => (
-              <motion.div
-                key={question.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
-                className="h-full"
-              >
-                <Link
-                  href={`/questions/${question.id}`}
-                  className="group block h-full no-underline"
-                >
-                  <AuraCard className="question-card flex flex-col p-6">
-                    <div className="flex gap-2 mb-4 flex-wrap">
-                      <span className={cn('badge', getDifficultyBadgeClass(question.difficulty))}>
-                        {getDifficultyLabel(question.difficulty)}
-                      </span>
-                      {question.category && (
-                        <span className="badge badge--purple">{question.category.name}</span>
-                      )}
-                    </div>
-
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                      {question.title}
-                    </h3>
-
-                    <p className="text-sm text-secondary line-clamp-3 mb-6 flex-grow">
-                      {truncate(question.description, 160)}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-glass-border">
-                      <span className="text-xs text-muted flex items-center gap-1">
-                        {question.hint && <Sparkles size={12} className="text-yellow-500" />}
-                        {question.hint ? 'Есть подсказка' : ''}
-                      </span>
-                      <ChevronRight size={16} className="text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                    </div>
-                  </AuraCard>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <style jsx>{`
-        .page {
-          padding-top: var(--space-20);
-        }
-        .container {
-          padding-top: var(--space-8);
-        }
-        .filters {
-          padding: var(--space-6);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-          margin-bottom: var(--space-8);
-        }
-        .questions-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-          gap: var(--space-6);
-        }
-        @media (max-width: 768px) {
-          .questions-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-        .question-skeleton {
-          height: 180px;
-          border-radius: var(--radius-lg);
-          background: linear-gradient(
-            90deg,
-            var(--bg-secondary) 25%,
-            var(--bg-hover) 50%,
-            var(--bg-secondary) 75%
-          );
-          background-size: 200% 100%;
-          animation: skeleton-loading 1.5s infinite;
-        }
-        @keyframes skeleton-loading {
-          0% {
-            background-position: 200% 0;
-          }
-          100% {
-            background-position: -200% 0;
-          }
-        }
-        .filters__search {
-          position: relative;
-        }
-        .filters__search :global(.filters__search-icon) {
-          position: absolute;
-          left: var(--space-4);
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-muted);
-        }
-        .filters__search .input {
-          padding-left: 44px;
-        }
-        .filters__row {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-        }
-        .filters__group {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          flex-wrap: wrap;
-        }
-      `}</style>
+      <QuestionsList
+        questions={filtered}
+        isLoading={isLoading}
+        error={error}
+      />
     </div>
+  )
+}
+
+// ── Page export ──────────────────────────────────────────────────────────
+
+export default function QuestionsPage() {
+  return (
+    <AuthGate
+      guest={<PublicLanding />}
+      authenticated={({ user }) => (
+        <AppShell user={user}>
+          <QuestionsRouteContent />
+        </AppShell>
+      )}
+    />
   )
 }

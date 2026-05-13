@@ -1,0 +1,242 @@
+/*
+ * Button — DS v2 primitive styles.
+ *
+ * Все величины берутся только из токенов Design_System:
+ *   --accent-*, --bg-*, --surface-*, --border-*, --danger, --danger-strong,
+ *   --space-*, --radius-*, --fs-*, --fw-*, --shadow-*, --dur-*, --ease-*.
+ * Хардкода цветов/px нет (Requirement 1.8, 1.10).
+ *
+ * Варианты: primary | secondary | ghost | danger.
+ * Размеры:  sm | md | lg.
+ * Состояния: :hover, :active, :focus-visible, :disabled, .ds-btn--loading.
+ *
+ * Touch-target (Requirement 11.8): min-height и min-width кнопки всегда
+ * ≥ 44px на любом viewport за счёт --space-11 (= 44px), даже для размера sm.
+ *
+ * Focus-ring (Requirement 11.3): видимый ring через outline + soft halo
+ * построенный из --accent-600; контраст ≥ 3:1 обеспечивается акцентной
+ * шкалой Design_System.
+ */
+
+.ds-btn {
+  /* Layout */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  /* Typography (tokens only) */
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+
+  /* Shape */
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+
+  /* Interaction */
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Motion tokens */
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+
+  /* Touch-target (Req 11.8): always ≥ 44×44, even on mobile. */
+  min-height: var(--space-11);
+  min-width: var(--space-11);
+
+  background: transparent;
+  color: inherit;
+}
+
+/* ============== Sizes ============== */
+
+.ds-btn--sm {
+  font-size: var(--fs-xs);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+}
+
+.ds-btn--md {
+  font-size: var(--fs-sm);
+  padding-inline: var(--space-4);
+  padding-block: var(--space-3);
+}
+
+.ds-btn--lg {
+  font-size: var(--fs-md);
+  padding-inline: var(--space-6);
+  padding-block: var(--space-4);
+  border-radius: var(--radius-lg);
+  min-height: var(--space-12);
+}
+
+/* ============== Variants ============== */
+
+/* Primary — solid accent fill, high emphasis. */
+.ds-btn--primary {
+  background: var(--accent-600);
+  color: var(--bg-0);
+  border-color: var(--accent-600);
+  box-shadow: var(--shadow-1);
+}
+.ds-btn--primary:hover:not(:disabled) {
+  background: var(--accent-700);
+  border-color: var(--accent-700);
+  box-shadow: var(--shadow-2);
+}
+.ds-btn--primary:active:not(:disabled) {
+  background: var(--accent-500);
+  border-color: var(--accent-500);
+  box-shadow: var(--shadow-1);
+}
+
+/* Secondary — tinted surface fill, medium emphasis. */
+.ds-btn--secondary {
+  background: color-mix(in oklch, var(--surface-500) 55%, transparent);
+  color: var(--border-900);
+  border-color: color-mix(in oklch, var(--border-500) 18%, transparent);
+  box-shadow: var(--shadow-1);
+}
+.ds-btn--secondary:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--surface-500) 75%, transparent);
+  border-color: color-mix(in oklch, var(--border-500) 30%, transparent);
+  box-shadow: var(--shadow-2);
+}
+.ds-btn--secondary:active:not(:disabled) {
+  background: color-mix(in oklch, var(--surface-500) 90%, transparent);
+}
+
+/* Ghost — transparent, low emphasis. */
+.ds-btn--ghost {
+  background: transparent;
+  color: var(--border-800);
+  border-color: transparent;
+}
+.ds-btn--ghost:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--surface-500) 35%, transparent);
+  color: var(--border-900);
+}
+.ds-btn--ghost:active:not(:disabled) {
+  background: color-mix(in oklch, var(--surface-500) 55%, transparent);
+}
+
+/* Danger — semantic red, destructive actions. */
+.ds-btn--danger {
+  background: var(--danger);
+  color: var(--bg-0);
+  border-color: var(--danger);
+  box-shadow: var(--shadow-1);
+}
+.ds-btn--danger:hover:not(:disabled) {
+  background: var(--danger-strong);
+  border-color: var(--danger-strong);
+  box-shadow: var(--shadow-2);
+}
+.ds-btn--danger:active:not(:disabled) {
+  background: var(--danger-strong);
+  border-color: var(--danger-strong);
+  box-shadow: var(--shadow-1);
+}
+
+/* ============== Width ============== */
+
+.ds-btn--full {
+  width: 100%;
+  display: flex;
+}
+
+/* ============== Disabled / busy ============== */
+
+.ds-btn:disabled,
+.ds-btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Loading: keeps `disabled` attribute (native re-click block) and shows a
+ * cursor-progress affordance. The label dims, the spinner overlays the icon
+ * slot. Re-click is also blocked in the click handler for defence-in-depth. */
+.ds-btn--loading {
+  cursor: progress;
+}
+.ds-btn--loading .ds-btn__label {
+  opacity: 0.6;
+}
+
+/* ============== Focus-ring (Req 11.3) ============== */
+
+.ds-btn:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+  box-shadow:
+    var(--shadow-1),
+    0 0 0 4px color-mix(in oklch, var(--accent-600) 25%, transparent);
+}
+
+/* ============== Spinner ============== */
+
+.ds-btn__spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.ds-btn__spinner > svg {
+  width: 100%;
+  height: 100%;
+  animation: ds-btn-spin var(--dur-dramatic) linear infinite;
+}
+
+@keyframes ds-btn-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============== Icon slots ============== */
+
+.ds-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+}
+
+.ds-btn__label {
+  display: inline-flex;
+  align-items: center;
+  transition: opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* ============== Reduced motion ============== */
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-btn {
+    transition-duration: 0ms;
+  }
+  .ds-btn__spinner > svg {
+    animation-duration: 0ms;
+  }
+}

@@ -50,3 +50,20 @@ build_output
 # IDEs
 .vscode/
 .idea/
+.cursor/
+.cursorrules
+.windsurfrules
+
+# AI tools config
+.claude/
+.opencode.json
+.mcp.json
+
+# Kiro
+.kiro/
+
+# Temp files
+temp_keys.json
+create_sb_project.js
+get_sb_keys.js
+check_categories.sql

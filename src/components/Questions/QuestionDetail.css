@@ -1,0 +1,201 @@
+/*
+ * QuestionDetail — двухколоночный layout страницы `/questions/[id]`
+ * (task 17.2; Requirements 14.1, 14.5, 14.6).
+ *
+ * Все величины — только через токены Design_System (Req 1.8):
+ *   --space-*, --radius-*, --fs-*, --fw-*, --border-*.
+ *
+ * Адаптивность (Req 14.5, 14.6):
+ *   - Viewport_Mobile/Tablet (< 1024px) — ОДНА колонка: `grid-template-columns: 1fr`
+ *     (одноколоночный вертикальный стек; двухколоночный режим ЗАПРЕЩЁН).
+ *   - Viewport_Desktop/Wide (>= 1024px) — ДВЕ колонки: `grid-template-columns: 1fr 1fr`
+ *     (содержимое вопроса слева, AnswerEditor-slot справа).
+ *
+ * Брейкпоинт 1024px реализован ТОЛЬКО через CSS `@media (min-width: 1024px)`,
+ * без JS width-check — чтобы исключить промежуточные состояния при resize
+ * (явное ограничение постановки задачи 17.2).
+ *
+ * Requirements: 14.1, 14.5, 14.6, 22.1
+ */
+
+.question-detail {
+    display: grid;
+    /* Mobile / Tablet: одна колонка (Req 14.6). */
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    width: 100%;
+    min-width: 0;
+    padding-inline: var(--space-4);
+    padding-block: var(--space-6);
+    max-width: 1440px;
+    margin-inline: auto;
+}
+
+/* Desktop/Wide: двухколоночный layout (Req 14.5). */
+@media (min-width: 1024px) {
+    .question-detail {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-8);
+        padding-inline: var(--space-8);
+        padding-block: var(--space-10);
+        align-items: start;
+    }
+}
+
+/* Колонка содержимого вопроса (слева на Desktop, сверху на Mobile). */
+.question-detail__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    min-width: 0;
+}
+
+@media (min-width: 1024px) {
+    .question-detail__content {
+        padding: var(--space-8);
+        /* На Desktop панель может «залипать» в верхней части колонки,
+           чтобы AnswerEditor справа прокручивался независимо. */
+        position: sticky;
+        top: var(--space-6);
+        max-height: calc(100vh - var(--space-12));
+        overflow-y: auto;
+    }
+}
+
+/* Колонка AnswerEditor slot (справа на Desktop, снизу на Mobile). */
+.question-detail__answer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+/* ── Header: title + badges ─────────────────────────────────────────── */
+
+.question-detail__header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.question-detail__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.question-detail__title {
+    font-family: var(--font-sans);
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--border-900);
+    margin: 0;
+}
+
+@media (min-width: 1024px) {
+    .question-detail__title {
+        font-size: var(--fs-2xl);
+    }
+}
+
+/* ── Section label (e.g. «Описание») ───────────────────────────────── */
+
+.question-detail__section-label {
+    font-family: var(--font-sans);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--border-700);
+    margin: 0;
+}
+
+/* ── Description ────────────────────────────────────────────────────── */
+
+.question-detail__description {
+    font-family: var(--font-sans);
+    font-size: var(--fs-md);
+    font-weight: var(--fw-regular);
+    line-height: 1.6;
+    color: var(--border-800);
+    margin: 0;
+    /* Plain-text fallback сохраняет переносы строк из исходного
+       описания. Используется только в plain-ветке (см. TSX). */
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ── Hint (collapsible) ────────────────────────────────────────────── */
+
+.question-detail__hint {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    /* Мягкая подложка семантического info — явно сигнализирует
+       «подсказка», используя только токены DS. */
+    background: var(--info-soft);
+    border: 1px solid
+        color-mix(in oklch, var(--info) 30%, transparent);
+}
+
+.question-detail__hint-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    /* Touch-target >= 44x44 на Mobile (Req 11.8): --space-11 == 44px. */
+    min-height: var(--space-11);
+    padding-block: var(--space-2);
+    padding-inline: 0;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: var(--border-900);
+    font-family: var(--font-sans);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
+    text-align: left;
+    transition:
+        color var(--dur-fast) var(--ease-standard);
+}
+
+.question-detail__hint-toggle:hover {
+    color: var(--accent-600);
+}
+
+.question-detail__hint-toggle:focus-visible {
+    outline: 2px solid var(--accent-600);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.question-detail__hint-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-5);
+    height: var(--space-5);
+    transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+.question-detail__hint-toggle[aria-expanded='true'] .question-detail__hint-chevron {
+    transform: rotate(180deg);
+}
+
+.question-detail__hint-body {
+    font-family: var(--font-sans);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-regular);
+    line-height: 1.55;
+    color: var(--border-800);
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}

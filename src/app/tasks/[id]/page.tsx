@@ -1,356 +1,636 @@
 'use client'
 
-import { useState, useEffect, useCallback, use } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import dynamic from 'next/dynamic'
+/**
+ * `/tasks/[id]` — Tasks_Module detail route (task 18.6, UI Redesign 2026).
+ *
+ * Перестроено под Design System v2 (Requirements 15.1, 21.1, 21.5, 22.4,
+ * 22.5):
+ *
+ *   - Авторизованный пользователь видит контент внутри `<AppShell />`;
+ *     гость отбрасывается клиентским `<AuthGate />` (`guest={null}` —
+ *     к моменту рендера middleware уже редиректнул, мы лишь страхуем
+ *     на гонках первичной загрузки) — без `router.push` и без полной
+ *     перезагрузки (Req 5.7, 6.8).
+ *
+ *   - Контент собирается из публичного API `@/components/tasks` барреля:
+ *     `<TaskSplitLayout description editor execution />` располагает три
+ *     панели в resizable горизонтальный split на Desktop/Wide и в
+ *     вертикальный стек на Mobile/Tablet (Req 15.4). В слоты передаются
+ *     `<TaskDescription />` (markdown + difficulty badge), DS-обёртка
+ *     над `<LazyMonacoEditor />` (Req 15.2, 15.3, 12.8) и
+ *     `<ExecutionPanel />` (Req 15.5–15.8) с дискриминированным
+ *     `ExecutionResult` через `acceptExecutionResult` type guard
+ *     (Req 15.6).
+ *
+ *   - Старая разметка (`motion.div`, `<style jsx>`, ручной grid `task-layout`,
+ *     CSS-классы вроде `task-card`/`filters-panel`/`editor-wrapper`,
+ *     framer-motion `AnimatePresence`, hex-литералы) удалена полностью
+ *     (Req 21.1, 21.5).
+ *
+ *   - Бизнес-логика и API-контракты не меняются (Req 21.2):
+ *       * Загрузка задачи: `supabase.from('tasks').select('*, category:categories(*)').eq('id', id).single()`.
+ *       * Запуск тестов: `POST /api/execute` с тем же payload-ом
+ *         `{ code, test_cases, time_limit_ms, memory_limit_mb }`.
+ *       * Persist сабмишена: `supabase.from('task_submissions').insert({...})`
+ *         с тем же набором полей, что и legacy-страница.
+ *
+ * Маппинг ответа `/api/execute` → `ExecutionResult` (Req 15.5–15.9):
+ *
+ *   - `status: 'passed'` → `{ kind: 'success', source: 'execute-api', passed, total }`.
+ *   - `status: 'failed'` → `{ kind: 'success', ... }` с partial pass count
+ *      (тот же UX, что у legacy: «3/5 passed» с danger-индикацией не
+ *      требуется отдельной веткой — пользователь увидит прогресс через
+ *      passed/total). Failed-кейсы из `details` остаются доступны через
+ *      будущий `<TestResultsCard />`, но в DS v2 ExecutionPanel держит
+ *      summary-вид; детали не входят в scope task 18.6.
+ *   - `status: 'error'` → `{ kind: 'runtime-error', source: 'execute-api',
+ *      stderr, failedTest? }`. Содержимое `stderr` собирается из API
+ *      (поле `stderr` или из первого failed `details[i].actual`).
+ *      `failedTest` пока не выделяется, т.к. legacy-страница тоже не
+ *      именует тест-кейсы.
+ *   - HTTP-ошибка / network-fail → `{ kind: 'runtime-error', ..., stderr }`
+ *      с человеко-понятным сообщением из `t('state.error.network')`.
+ *
+ * Compile-/timeout-ветки требуют дополнительной разметки в ответе API
+ * (`compile_error`, `timed_out`), которой нет в текущем `/api/execute`.
+ * Поэтому маппинг — best-effort: если `stderr` содержит классические
+ * Go-маркеры компиляции (`./prog.go:N:M:`) или строку `timeout`, мы
+ * перенаправляем результат в соответствующую ветку. Любой результат
+ * из этой страницы помечен `source: 'execute-api'` — иначе
+ * `acceptExecutionResult` его отвергнет (Req 15.6).
+ *
+ * Почему `'use client'`: `<AuthGate />` принимает render-функцию
+ * `authenticated={({ user }) => ...}`, которые не сериализуются через
+ * границу server→client, плюс вся работа с `localStorage` Sidebar /
+ * Monaco-инстансом / fetch-стейтом — клиентская.
+ */
+
+import {
+    use,
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+    type CSSProperties,
+} from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Play, Loader2, CheckCircle2, XCircle, FlaskConical, RotateCcw } from 'lucide-react'
+
+import { AppShell, AuthGate } from '@/components/shell'
+import {
+    ExecutionPanel,
+    LazyMonacoEditor,
+    TaskDescription,
+    TaskSplitLayout,
+    acceptExecutionResult,
+    type ExecutionResult,
+} from '@/components/Tasks'
+import {
+    Button,
+    EmptyState,
+    ErrorState,
+    GlassPanel,
+    Skeleton,
+} from '@/components/ui'
+import { t } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
-import { cn, getDifficultyBadgeClass, getDifficultyLabel } from '@/lib/utils'
-import type { Task, TestResults } from '@/types/database'
-import MarkdownContent from '@/components/ui/MarkdownContent'
+import type { CodeExecutionResponse, Task, TestCase } from '@/types/database'
 
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false })
+// ── Layout (DS tokens only; Req 1.8) ────────────────────────────────────
 
-export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params)
-    const [task, setTask] = useState<Task | null>(null)
-    const [code, setCode] = useState('')
-    const [loading, setLoading] = useState(true)
-    const [running, setRunning] = useState(false)
-    const [results, setResults] = useState<TestResults | null>(null)
-    const [runStatus, setRunStatus] = useState<'passed' | 'failed' | 'error' | null>(null)
-    const [execTime, setExecTime] = useState(0)
-    const [isExtended, setIsExtended] = useState(false)
+const PAGE_STYLE: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--space-4)',
+    width: '100%',
+    minWidth: 0,
+    // Высота split-layout на Desktop рассчитывается от viewport-минус-topbar.
+    // На Mobile/Tablet TaskSplitLayout сам переключается на `height: auto`.
+    minHeight: '100%',
+}
 
-    const loadTask = useCallback(async () => {
-        const supabase = createClient()
-        const { data } = await supabase
-            .from('tasks')
-            .select('*, category:categories(*)')
-            .eq('id', id)
-            .single()
+const BACK_LINK_STYLE: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 'var(--space-2)',
+    fontFamily: 'var(--font-sans)',
+    fontSize: 'var(--fs-sm)',
+    fontWeight: 'var(--fw-medium)',
+    color: 'var(--border-700)',
+    textDecoration: 'none',
+    alignSelf: 'flex-start',
+}
 
-        if (data) {
-            setTask(data)
-            setCode(data.starter_code || `package main
+const SPLIT_WRAPPER_STYLE: CSSProperties = {
+    display: 'flex',
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+}
+
+const EDITOR_PANEL_STYLE: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--space-3)',
+    padding: 'var(--space-4)',
+    borderRadius: 'var(--radius-lg)',
+    height: '100%',
+    minHeight: 0,
+    minWidth: 0,
+}
+
+const EDITOR_HEADER_STYLE: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 'var(--space-3)',
+    fontFamily: 'var(--font-sans)',
+    fontSize: 'var(--fs-sm)',
+    fontWeight: 'var(--fw-semibold)',
+    color: 'var(--border-800)',
+}
+
+const EDITOR_FILE_NAME_STYLE: CSSProperties = {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 'var(--fs-sm)',
+    fontWeight: 'var(--fw-medium)',
+    color: 'var(--border-700)',
+}
+
+const EDITOR_WRAPPER_STYLE: CSSProperties = {
+    flex: 1,
+    minHeight: 0,
+    display: 'flex',
+}
+
+const EDITOR_FOOTER_STYLE: CSSProperties = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 'var(--space-3)',
+    paddingTop: 'var(--space-2)',
+}
+
+const SKELETON_PANEL_STYLE: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 'var(--space-3)',
+    padding: 'var(--space-6)',
+    borderRadius: 'var(--radius-lg)',
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Стартовый код по умолчанию, если у задачи нет `starter_code`.
+ * Совпадает с legacy-страницей (`/src/app/tasks/[id]/page.tsx`).
+ */
+const DEFAULT_STARTER = `package main
 
 import "fmt"
 
 func main() {
 \tfmt.Println("Hello, World!")
 }
-`)
+`
+
+/**
+ * Эвристика на распознавание ошибки компиляции в `stderr`. Go-компилятор
+ * пишет диагностики в формате `<file>:<line>:<col>: <message>`, плюс часто
+ * присутствуют строки `syntax error`, `undefined:`, `cannot use ... as ...`.
+ * Возвращает `{ line?, type?, message }`, если pattern сматчился.
+ */
+function tryParseCompileError(stderr: string): {
+    line?: number
+    type?: string
+    message: string
+} | null {
+    if (!stderr) return null
+    // Самый стабильный маркер: путь:line:col:
+    const match = stderr.match(
+        /(?:^|[\r\n])([^\s:]*\.go):(\d+):(?:(\d+):)?\s*(.+?)(?:[\r\n]|$)/,
+    )
+    if (match) {
+        const line = Number.parseInt(match[2] ?? '', 10)
+        const message = match[4]?.trim() || stderr.trim()
+        const typeMatch = message.match(/^([a-zA-Z][\w\s-]+?):/)
+        return {
+            line: Number.isFinite(line) ? line : undefined,
+            type: typeMatch?.[1]?.trim(),
+            message,
         }
-        setLoading(false)
-    }, [id])
-
-    useEffect(() => {
-        const init = async () => {
-            await Promise.resolve()
-            loadTask()
-        }
-        init()
-    }, [id, loadTask])
-
-    async function handleRun(extended = false) {
-        if (!task) return
-        setRunning(true)
-        setResults(null)
-        setRunStatus(null)
-        setIsExtended(extended)
-
-        try {
-            const testCases = extended && task.extended_test_cases
-                ? [...task.test_cases, ...task.extended_test_cases]
-                : task.test_cases
-
-            const res = await fetch('/api/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    code,
-                    test_cases: testCases,
-                    time_limit_ms: task.time_limit_ms,
-                    memory_limit_mb: task.memory_limit_mb,
-                }),
-            })
-            const data = await res.json()
-            setResults(data.results)
-            setRunStatus(data.status)
-            setExecTime(data.executionTimeMs || data.execution_time_ms || 0)
-
-            // Save submission
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                await supabase.from('task_submissions').insert({
-                    user_id: user.id,
-                    task_id: task.id,
-                    code,
-                    status: data.status,
-                    test_results: data.results,
-                    execution_time_ms: data.executionTimeMs || data.execution_time_ms || 0,
-                })
-            }
-        } catch {
-            setRunStatus('error')
-        }
-        setRunning(false)
     }
+    // Лёгкий fallback: явные «syntax error / undefined / expected ...».
+    if (/\b(syntax error|undefined|expected\s+\w)/i.test(stderr)) {
+        return { message: stderr.trim() }
+    }
+    return null
+}
 
-    if (loading) {
+/**
+ * Эвристика на распознавание timeout. Сервис выполнения может вернуть
+ * `error: 'timeout'` либо включить «time limit exceeded» в stderr.
+ */
+function looksLikeTimeout(payload: { stderr?: string }): boolean {
+    const s = (payload.stderr ?? '').toLowerCase()
+    return s.includes('timeout') || s.includes('time limit')
+}
+
+/**
+ * Маппинг ответа `/api/execute` → `ExecutionResult` (Req 15.5–15.9).
+ * Каждый успешный кейс маркируется `source: 'execute-api'`, чтобы пройти
+ * `acceptExecutionResult` (Req 15.6).
+ */
+function mapExecuteResponse(
+    res: CodeExecutionResponse,
+): ExecutionResult {
+    if (res.status === 'error') {
+        const stderr = res.stderr ?? ''
+        if (looksLikeTimeout({ stderr })) {
+            return { kind: 'timeout', source: 'execute-api' }
+        }
+        const compile = tryParseCompileError(stderr)
+        if (compile) {
+            return {
+                kind: 'compile-error',
+                source: 'execute-api',
+                line: compile.line,
+                type: compile.type,
+                message: compile.message,
+            }
+        }
+        return {
+            kind: 'runtime-error',
+            source: 'execute-api',
+            stderr: stderr || t('state.error.unknown'),
+        }
+    }
+    // `passed` и `failed` сводим к summary-варианту: passed/total из
+    // `results`. ExecutionPanel рендерит success-Badge с прогрессом.
+    return {
+        kind: 'success',
+        source: 'execute-api',
+        passed: res.results?.passed ?? 0,
+        total: res.results?.total ?? 0,
+    }
+}
+
+// ── Inner authenticated content ─────────────────────────────────────────
+
+interface TaskDetailRouteContentProps {
+    /** Идентификатор задачи из URL. */
+    taskId: string
+}
+
+function TaskDetailRouteContent({ taskId }: TaskDetailRouteContentProps) {
+    const [task, setTask] = useState<Task | null>(null)
+    const [code, setCode] = useState('')
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<Error | null>(null)
+    const [reloadToken, setReloadToken] = useState(0)
+
+    // ExecutionPanel state — изолирован от загрузки задачи. Старт — `idle`.
+    const [execResult, setExecResult] = useState<ExecutionResult>({
+        kind: 'idle',
+    })
+    const [isRunning, setIsRunning] = useState(false)
+    const [lastExtended, setLastExtended] = useState(false)
+
+    // Загрузка задачи. Без зависимостей от `code` — ввод в редактор не
+    // должен триггерить повторный fetch.
+    useEffect(() => {
+        let active = true
+        const supabase = createClient()
+        setIsLoading(true)
+        setError(null)
+
+        async function load() {
+            try {
+                const { data, error: fetchError } = await supabase
+                    .from('tasks')
+                    .select('*, category:categories(*)')
+                    .eq('id', taskId)
+                    .single()
+
+                if (!active) return
+                if (fetchError) throw fetchError
+                const loaded = (data as Task | null) ?? null
+                setTask(loaded)
+                setCode(loaded?.starter_code ?? DEFAULT_STARTER)
+            } catch (err) {
+                if (!active) return
+                setError(err instanceof Error ? err : new Error(String(err)))
+            } finally {
+                if (active) setIsLoading(false)
+            }
+        }
+
+        void load()
+        return () => {
+            active = false
+        }
+    }, [taskId, reloadToken])
+
+    const handleRetryLoad = useCallback(() => {
+        setReloadToken((n) => n + 1)
+    }, [])
+
+    const handleResetCode = useCallback(() => {
+        if (!task) return
+        setCode(task.starter_code ?? DEFAULT_STARTER)
+    }, [task])
+
+    /**
+     * Run tests. Контракт `/api/execute` без изменений (Req 21.2):
+     * `{ code, test_cases, time_limit_ms, memory_limit_mb }` →
+     * `{ status, results, executionTimeMs, stderr? }`. Persist сабмишена
+     * в `task_submissions` — best-effort, не блокирует UI.
+     */
+    const runTests = useCallback(
+        async (extended: boolean) => {
+            if (!task || isRunning) return
+            setIsRunning(true)
+            setLastExtended(extended)
+            setExecResult({ kind: 'running' })
+
+            const testCases: TestCase[] =
+                extended && task.extended_test_cases
+                    ? [...task.test_cases, ...task.extended_test_cases]
+                    : task.test_cases
+
+            try {
+                const res = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code,
+                        test_cases: testCases,
+                        time_limit_ms: task.time_limit_ms,
+                        memory_limit_mb: task.memory_limit_mb,
+                    }),
+                })
+
+                if (!res.ok) {
+                    setExecResult({
+                        kind: 'runtime-error',
+                        source: 'execute-api',
+                        stderr: t('state.error.server'),
+                    })
+                    return
+                }
+
+                const data = (await res.json()) as Partial<
+                    CodeExecutionResponse & { results: { passed: number; total: number } }
+                >
+
+                // Validate structure минимально — `mapExecuteResponse` ожидает
+                // строго `CodeExecutionResponse`-shape, но реальный API может
+                // вернуть `executionTimeMs` вместо `execution_time_ms`. Для
+                // ExecutionResult-маппинга это не критично — мы используем
+                // только `status`, `results.passed/total`, `stderr`.
+                const normalised: CodeExecutionResponse = {
+                    status: (data.status ?? 'error') as CodeExecutionResponse['status'],
+                    results: {
+                        passed: data.results?.passed ?? 0,
+                        total: data.results?.total ?? testCases.length,
+                        details:
+                            data.results &&
+                            'details' in data.results &&
+                            Array.isArray(
+                                (data.results as { details?: unknown }).details,
+                            )
+                                ? ((data.results as { details: never[] }).details)
+                                : [],
+                    },
+                    execution_time_ms:
+                        (data as { execution_time_ms?: number; executionTimeMs?: number })
+                            .execution_time_ms ??
+                        (data as { executionTimeMs?: number }).executionTimeMs ??
+                        0,
+                    stderr: data.stderr,
+                }
+
+                const mapped = mapExecuteResponse(normalised)
+                // Финальная страховка контракта Req 15.6: даже если рефакторинг
+                // потеряет origin-tag, `acceptExecutionResult` отвергнет
+                // объект, и мы покажем generic runtime-error из stderr.
+                const accepted = acceptExecutionResult(mapped)
+                setExecResult(
+                    accepted ?? {
+                        kind: 'runtime-error',
+                        source: 'execute-api',
+                        stderr: t('state.error.unknown'),
+                    },
+                )
+
+                // Persist сабмишена. Best-effort — те же поля, что в legacy.
+                try {
+                    const supabase = createClient()
+                    const {
+                        data: { user },
+                    } = await supabase.auth.getUser()
+                    if (user) {
+                        await supabase.from('task_submissions').insert({
+                            user_id: user.id,
+                            task_id: task.id,
+                            code,
+                            status: normalised.status,
+                            test_results: normalised.results,
+                            execution_time_ms: normalised.execution_time_ms,
+                        })
+                    }
+                } catch {
+                    // RLS/network — UX результата уже виден; persist не критичен.
+                }
+            } catch {
+                setExecResult({
+                    kind: 'runtime-error',
+                    source: 'execute-api',
+                    stderr: t('state.error.network'),
+                })
+            } finally {
+                setIsRunning(false)
+            }
+        },
+        [task, code, isRunning],
+    )
+
+    const handleRetryRun = useCallback(() => {
+        void runTests(lastExtended)
+    }, [runTests, lastExtended])
+
+    // ── Loading ──
+    if (isLoading) {
         return (
-            <div className="page">
-                <div className="container">
-                    <div className="skeleton" style={{ height: 500 }} />
-                </div>
+            <div
+                style={PAGE_STYLE}
+                data-ds="task-detail-page"
+                data-state="loading"
+            >
+                <Link href="/tasks" style={BACK_LINK_STYLE}>
+                    ← {t('tasks.detail.back')}
+                </Link>
+                <GlassPanel style={SKELETON_PANEL_STYLE}>
+                    <Skeleton variant="line" />
+                    <Skeleton variant="line" />
+                    <Skeleton variant="card" />
+                </GlassPanel>
             </div>
         )
     }
 
+    // ── Error ──
+    if (error) {
+        return (
+            <div
+                style={PAGE_STYLE}
+                data-ds="task-detail-page"
+                data-state="error"
+            >
+                <Link href="/tasks" style={BACK_LINK_STYLE}>
+                    ← {t('tasks.detail.back')}
+                </Link>
+                <ErrorState
+                    messageKey="state.error.unknown"
+                    retry={handleRetryLoad}
+                />
+            </div>
+        )
+    }
+
+    // ── Not found ──
     if (!task) {
         return (
-            <div className="page">
-                <div className="container empty-state">
-                    <p className="empty-state__title">Задача не найдена</p>
-                    <Link href="/tasks" className="btn btn--secondary">Назад к списку</Link>
-                </div>
+            <div
+                style={PAGE_STYLE}
+                data-ds="task-detail-page"
+                data-state="empty"
+            >
+                <Link href="/tasks" style={BACK_LINK_STYLE}>
+                    ← {t('tasks.detail.back')}
+                </Link>
+                <GlassPanel>
+                    <EmptyState
+                        title={t('tasks.detail.notFound.title')}
+                        description={t('tasks.detail.notFound.description')}
+                    />
+                </GlassPanel>
             </div>
         )
     }
 
-    return (
-        <div className="page task-page">
-            <div className="container">
-                <Link href="/tasks" className="back-link">
-                    <ArrowLeft size={16} /> Все задачи
-                </Link>
+    // ── Success ──
+    const description = <TaskDescription task={task} />
 
-                <div className="task-layout">
-                    {/* Left: Description */}
-                    <div className="task-desc glass glass--strong">
-                        <div className="flex items-center gap-3" style={{ marginBottom: 'var(--space-4)' }}>
-                            <span className={cn('badge', getDifficultyBadgeClass(task.difficulty))}>
-                                {getDifficultyLabel(task.difficulty)}
-                            </span>
-                            {task.category && <span className="badge badge--purple">{task.category.name}</span>}
-                        </div>
-                        <h1 className="task-desc__title">{task.title}</h1>
-                        <MarkdownContent content={task.description} className="task-desc__body" />
-                        <div className="task-desc__meta">
-                            <span>⏱ Лимит: {task.time_limit_ms / 1000}с</span>
-                            <span>💾 Память: {task.memory_limit_mb}MB</span>
-                            <span>🧪 Тестов: {task.test_cases.length}{task.extended_test_cases ? ` + ${task.extended_test_cases.length} расш.` : ''}</span>
-                        </div>
-                    </div>
-
-                    {/* Right: Editor + Results */}
-                    <div className="task-editor-panel">
-                        <div className="editor-wrapper glass glass--strong">
-                            <div className="editor-header">
-                                <span className="text-sm font-semibold">main.go</span>
-                                <button className="btn btn--ghost btn--sm" onClick={() => setCode(task.starter_code || '')}>
-                                    <RotateCcw size={14} /> Сбросить
-                                </button>
-                            </div>
-                            <div className="editor-container">
-                                <MonacoEditor
-                                    height="400px"
-                                    defaultLanguage="go"
-                                    theme="vs-dark"
-                                    value={code}
-                                    onChange={(v) => setCode(v || '')}
-                                    options={{
-                                        minimap: { enabled: false },
-                                        fontSize: 14,
-                                        fontFamily: 'JetBrains Mono, monospace',
-                                        padding: { top: 16 },
-                                        scrollBeyondLastLine: false,
-                                        lineNumbers: 'on',
-                                        renderLineHighlight: 'line',
-                                        automaticLayout: true,
-                                    }}
-                                />
-                            </div>
-                            <div className="editor-footer">
-                                <button
-                                    className="btn btn--primary"
-                                    onClick={() => handleRun(false)}
-                                    disabled={running}
-                                >
-                                    {running && !isExtended ? <Loader2 size={16} className="spin" /> : <Play size={16} />}
-                                    Запустить тесты
-                                </button>
-                                {task.extended_test_cases && task.extended_test_cases.length > 0 && (
-                                    <button
-                                        className="btn btn--secondary"
-                                        onClick={() => handleRun(true)}
-                                        disabled={running}
-                                    >
-                                        {running && isExtended ? <Loader2 size={16} className="spin" /> : <FlaskConical size={16} />}
-                                        Расширенные тесты
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Test Results */}
-                        <AnimatePresence>
-                            {results && (
-                                <motion.div
-                                    className="test-results glass glass--strong"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="test-results__header">
-                                        <div className={cn('flex items-center gap-2 font-bold', runStatus === 'passed' ? '' : '')} style={{ color: runStatus === 'passed' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                            {runStatus === 'passed' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
-                                            {task.test_cases.length === 0
-                                                ? (runStatus === 'passed' ? 'Программа выполнена' : 'Ошибка выполнения')
-                                                : (runStatus === 'passed' ? 'Все тесты пройдены!' : runStatus === 'error' ? 'Ошибка' : 'Тесты не пройдены')}
-                                        </div>
-                                        <div className="text-sm text-muted">
-                                            {task.test_cases.length > 0 ? `${results.passed}/${results.total} | ` : ''}{execTime}ms
-                                        </div>
-                                    </div>
-                                    <div className="test-results__list">
-                                        {results.details.map((detail, i) => (
-                                            <div key={i} className={cn('test-result', detail.passed ? 'test-result--pass' : 'test-result--fail')}>
-                                                <span>{detail.passed ? '✓' : '✗'}</span>
-                                                <div style={{ flex: 1 }}>
-                                                    {task.test_cases.length > 0 ? (
-                                                        <>
-                                                            <div>Вход: <code>{detail.input || '(пусто)'}</code></div>
-                                                            {!detail.passed && (
-                                                                <>
-                                                                    <div>Ожидалось: <code>{detail.expected}</code></div>
-                                                                    <div>Получено: <code>{detail.actual}</code></div>
-                                                                </>
-                                                            )}
-                                                        </>
-                                                    ) : (
-                                                        <div>Вывод: <pre style={{
-                                                            margin: 'var(--space-2) 0 0 0',
-                                                            padding: 'var(--space-3)',
-                                                            background: 'rgba(0,0,0,0.3)',
-                                                            borderRadius: 'var(--radius-sm)',
-                                                            fontSize: 'var(--font-size-xs)',
-                                                            fontFamily: 'JetBrains Mono, monospace'
-                                                        }}>{detail.actual}</pre></div>
-                                                    )}
-                                                </div>
-                                                {detail.execution_time_ms !== undefined && (
-                                                    <span className="text-xs text-muted">{detail.execution_time_ms}ms</span>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
+    const editor = (
+        <GlassPanel
+            style={EDITOR_PANEL_STYLE}
+            data-ds="task-detail-editor-panel"
+        >
+            <header style={EDITOR_HEADER_STYLE}>
+                <span style={EDITOR_FILE_NAME_STYLE}>
+                    {t('tasks.detail.editor.fileName')}
+                </span>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetCode}
+                >
+                    {t('tasks.detail.editor.reset')}
+                </Button>
+            </header>
+            <div style={EDITOR_WRAPPER_STYLE}>
+                <LazyMonacoEditor
+                    height="100%"
+                    defaultLanguage="go"
+                    value={code}
+                    onChange={(v) => setCode(v ?? '')}
+                    options={{
+                        fontSize: 14,
+                        fontFamily: 'var(--font-mono)',
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        lineNumbers: 'on',
+                        renderLineHighlight: 'line',
+                        automaticLayout: true,
+                        padding: { top: 12 },
+                    }}
+                />
             </div>
+            <div style={EDITOR_FOOTER_STYLE}>
+                <Button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    loading={isRunning && !lastExtended}
+                    disabled={isRunning && lastExtended}
+                    onClick={() => runTests(false)}
+                >
+                    {t('tasks.detail.run')}
+                </Button>
+                {task.extended_test_cases &&
+                task.extended_test_cases.length > 0 ? (
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="md"
+                        loading={isRunning && lastExtended}
+                        disabled={isRunning && !lastExtended}
+                        onClick={() => runTests(true)}
+                    >
+                        {t('tasks.detail.run.extended')}
+                    </Button>
+                ) : null}
+            </div>
+        </GlassPanel>
+    )
 
-            <style jsx>{`
-        .back-link {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-2);
-          color: var(--text-secondary);
-          font-size: var(--font-size-sm);
-          margin-bottom: var(--space-6);
-          text-decoration: none;
-        }
-        .back-link:hover { color: var(--color-primary); }
-        .task-layout {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: var(--space-6);
-          align-items: start;
-        }
-        .task-desc {
-          padding: var(--space-8);
-          position: sticky;
-          top: 88px;
-        }
-        .task-desc__title {
-          font-size: var(--font-size-2xl);
-          font-weight: 700;
-          margin-bottom: var(--space-4);
-        }
-        .task-desc__body {
-          color: var(--text-secondary);
-          line-height: var(--line-height-relaxed);
-          white-space: pre-wrap;
-          font-size: var(--font-size-sm);
-        }
-        .task-desc__meta {
-          display: flex;
-          gap: var(--space-4);
-          margin-top: var(--space-6);
-          padding-top: var(--space-4);
-          border-top: 1px solid var(--border-color);
-          font-size: var(--font-size-xs);
-          color: var(--text-muted);
-        }
-        .task-editor-panel {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-6);
-        }
-        .editor-wrapper {
-          overflow: hidden;
-        }
-        .editor-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-3) var(--space-4);
-          border-bottom: 1px solid var(--border-color);
-        }
-        .editor-container {
-          border-bottom: 1px solid var(--border-color);
-        }
-        .editor-footer {
-          display: flex;
-          gap: var(--space-3);
-          padding: var(--space-4);
-        }
-        .test-results__header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-4) var(--space-6);
-          border-bottom: 1px solid var(--border-color);
-        }
-        .test-results__list {
-          padding: var(--space-4);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-          max-height: 300px;
-          overflow-y: auto;
-        }
-        @media (max-width: 1024px) {
-          .task-layout {
-            grid-template-columns: 1fr;
-          }
-          .task-desc {
-            position: static;
-          }
-        }
-        :global(.spin) {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+    const execution = (
+        <ExecutionPanel result={execResult} onRetry={handleRetryRun} />
+    )
+
+    return (
+        <div
+            style={PAGE_STYLE}
+            data-ds="task-detail-page"
+            data-state="success"
+        >
+            <Link href="/tasks" style={BACK_LINK_STYLE}>
+                ← {t('tasks.detail.back')}
+            </Link>
+            <div style={SPLIT_WRAPPER_STYLE}>
+                <TaskSplitLayout
+                    description={description}
+                    editor={editor}
+                    execution={execution}
+                />
+            </div>
         </div>
+    )
+}
+
+// ── Page export ─────────────────────────────────────────────────────────
+
+interface PageProps {
+    params: Promise<{ id: string }>
+}
+
+export default function TaskDetailPage({ params }: PageProps) {
+    // Next.js 16 App Router: `params` — Promise. Разворачиваем через `use()`
+    // ровно так же, как делает legacy-страница.
+    const { id } = use(params)
+
+    // useMemo стабилизирует `authenticated` render-функцию по `id`.
+    const content = useMemo(
+        () => <TaskDetailRouteContent taskId={id} />,
+        [id],
+    )
+
+    return (
+        <AuthGate
+            guest={null}
+            authenticated={({ user }) => (
+                <AppShell user={user}>{content}</AppShell>
+            )}
+        />
     )
 }

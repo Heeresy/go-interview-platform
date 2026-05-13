@@ -1,0 +1,99 @@
+/*
+ * FeatureGrid — секция «Возможности» Public_Landing (task 13.2).
+ *
+ * Все величины — только через токены Design_System (Req 1.8):
+ *   --space-*, --radius-*, --fs-*, --fw-*, --border-*, --surface-*,
+ *   --accent-*.
+ *
+ * Адаптивность (Req 9):
+ *   - Viewport_Mobile (< 1024px) — single column (stacked).
+ *   - Viewport_Desktop/Wide (>= 1024px) — `repeat(3, 1fr)`.
+ *   Брейкпоинт 1024px совпадает с `Viewport_Desktop` из Glossary.
+ *
+ * Requirements: 4.2, 12.7, 22.1
+ */
+
+.landing-features {
+    width: 100%;
+    padding-block: var(--space-14);
+    padding-inline: var(--space-4);
+}
+
+@media (min-width: 768px) {
+    .landing-features {
+        padding-block: var(--space-20);
+        padding-inline: var(--space-6);
+    }
+}
+
+.landing-features__inner {
+    max-width: 1440px;
+    margin-inline: auto;
+}
+
+.landing-features__title {
+    font-family: var(--font-sans);
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-semibold);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--border-900);
+    margin: 0 0 var(--space-10) 0;
+}
+
+@media (min-width: 1024px) {
+    .landing-features__title {
+        font-size: var(--fs-3xl);
+    }
+}
+
+/* Сетка: 1 колонка на Mobile, 3 колонки на Desktop. */
+.landing-features__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+}
+
+@media (min-width: 1024px) {
+    .landing-features__grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.landing-features__card {
+    padding: var(--space-8);
+    border-radius: var(--radius-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: var(--space-32);
+}
+
+.landing-features__iconWrap {
+    width: var(--space-12);
+    height: var(--space-12);
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklch, var(--accent-500) 18%, transparent);
+    color: var(--accent-600);
+}
+
+.landing-features__cardTitle {
+    font-family: var(--font-sans);
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    line-height: 1.2;
+    color: var(--border-900);
+    margin: 0;
+}
+
+.landing-features__cardDescription {
+    font-family: var(--font-sans);
+    font-size: var(--fs-md);
+    font-weight: var(--fw-regular);
+    line-height: 1.55;
+    color: var(--border-700);
+    margin: 0;
+}

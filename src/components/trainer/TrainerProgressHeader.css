@@ -1,0 +1,82 @@
+/*
+ * TrainerProgressHeader — Design System v2 стили для шапки тренажёра.
+ *
+ * Все величины берутся только из токенов Design_System
+ * (`--space-*`, `--radius-*`, `--fs-*`, `--fw-*`, `--border-*`,
+ * `--accent-*`, `--dur-*`, `--ease-*`, `--z-sticky`). Хардкода px или
+ * цветов нет (Requirement 1.8, 1.10).
+ *
+ * Поведение (Requirement 16.2):
+ *
+ *   - Sticky к верхней кромке области контента. На Desktop/Wide
+ *     (≥ 1024px) шапка действительно прилипает при скролле через
+ *     `position: sticky; top: var(--space-4)`. На Mobile/Tablet
+ *     CSS всё равно задаёт `position: sticky`, но не мешает ничему:
+ *     без scroll-контейнера-предка браузер просто ведёт себя как
+ *     `position: relative`, а визуальная шапка остаётся на месте.
+ *
+ *   - Mobile-first раскладка: колонка (`flex-direction: column`),
+ *     все три слота занимают полную ширину, чтобы на узких экранах
+ *     уровень, прогресс и счётчик не сжимались и читались.
+ *
+ *   - На Desktop/Wide (≥ 1024px) переключаемся на строку
+ *     (`flex-direction: row`): слева — бейдж уровня, по центру —
+ *     прогресс-бар, растягивающийся на всё свободное пространство,
+ *     справа — счётчик решённых.
+ */
+
+.trainer-progress-header {
+  position: sticky;
+  top: var(--space-4);
+  z-index: var(--z-sticky);
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+
+  padding: var(--space-4);
+
+  /* `.glass` из `globals.css` уже задаёт фон, blur, границу и радиус;
+     здесь только раскладка + переопределяемый радиус для sticky. */
+}
+
+.trainer-progress-header__level {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.trainer-progress-header__progress {
+  /* Прогресс-бар занимает всё доступное пространство в центре строки
+     на Desktop и всю ширину колонки на Mobile. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.trainer-progress-header__solved {
+  flex-shrink: 0;
+
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium, var(--font-weight-medium));
+  color: var(--border-800);
+  line-height: 1.3;
+
+  /* На Mobile — слегка отделяем от прогресс-бара визуально. */
+  margin: 0;
+}
+
+/* ---- Desktop / Wide: ≥ 1024px --------------------------------------- */
+
+@media (min-width: 1024px) {
+  .trainer-progress-header {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .trainer-progress-header__solved {
+    /* На Desktop счётчик прижат к правому краю. */
+    text-align: end;
+  }
+}

@@ -1,0 +1,191 @@
+/*
+ * Hero — styles for the Public_Landing hero section.
+ *
+ * Spec: UI Redesign 2026 — task 13.1.
+ *
+ * All values are pulled from Design_System tokens (`--space-*`,
+ * `--radius-*`, `--fs-*`, `--fw-*`, `--dur-*`, `--ease-*`, `--accent-*`,
+ * `--border-*`, `--bg-*`). No hardcoded colors/px/radii — Requirement 1.8.
+ *
+ * Composition (Req 4.2, 4.4):
+ *   • Mobile-first: the whole hero is a single column of content,
+ *     the decorative scene is hidden via `display: none`.
+ *   • ≥ 1024px: switch to a two-column CSS grid `1fr 1fr` (per task 13.1).
+ *     The asymmetric feel is carried by the *content* of the columns —
+ *     the left holds kinetic typography + CTAs, the right is an amplified
+ *     AuroraBackground — rather than by column widths (Req 4.4).
+ *
+ * Scene-scale amplification (Req 4.4):
+ *   The <AuroraBackground /> component renders a `position: fixed`
+ *   full-viewport layer by default. In the hero context we override
+ *   that to `position: absolute` so it lives inside `.hero__scene`,
+ *   then we apply `transform: scale(...)` and a mild `filter: blur(...)`
+ *   to make the gradient look more cinematic and intense, while keeping
+ *   token-driven values for the blur radius (via `--hero-aurora-blur`).
+ */
+
+.hero {
+  /* Layout container — mobile-first: single column, vertically stacked. */
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-10);
+  width: 100%;
+  /* Clamp content to the platform's 1440px shell (Req 9.2). `--space-32`
+     equals 128px, so `--space-32 * 11.25` = 1440px — kept as a calc()
+     expression so we stay on tokens. */
+  max-width: calc(var(--space-32) * 11.25);
+  margin-inline: auto;
+  padding-block: var(--space-16);
+  padding-inline: var(--space-6);
+  z-index: var(--z-content);
+}
+
+.hero__content {
+  /* Column contents — internal vertical rhythm via gap, no margins. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: calc(var(--space-32) * 6);
+  /* Constrain the text width so paragraphs stay in the 45–85ch band
+     required by Req 9.5; CSS `ch` is font-relative, so this keeps
+     pacing consistent across Inter Variable's real metrics. */
+}
+
+.hero__title {
+  /* KineticHeading is an inline-block by default; here we size its
+     inner text using the display-size token. Font family is inherited
+     from `--font-sans` through the html root. */
+  font-family: var(--font-sans);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-semibold);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--border-900);
+}
+
+.hero__subtitle {
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-regular);
+  line-height: 1.5;
+  color: var(--border-800);
+  /* Keep paragraph width in the readable 45–85ch band (Req 9.5). */
+  max-width: 62ch;
+}
+
+.hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  /* Push CTAs a touch below the subtitle for a clear visual hierarchy. */
+  margin-top: var(--space-2);
+}
+
+/*
+ * Decorative scene (right column).
+ *
+ * Mobile-first: hidden completely. This lets us skip mounting the WebGL
+ * layer at all on small viewports (the component uses matchMedia to
+ * gate the actual mount), which is the cheapest path for LCP on mobile
+ * (Req 12.1, 12.9).
+ */
+.hero__scene {
+  display: none;
+}
+
+/*
+ * Desktop enhancement — two-column layout and the aurora scene on the
+ * right, at ≥ 1024px (Viewport_Desktop and up).
+ */
+@media (min-width: 1024px) {
+  .hero {
+    /* Task 13.1 explicitly specifies `1fr 1fr`. Asymmetry lives in the
+       content — text on the left, the cinematic aurora on the right —
+       while the columns themselves share the hero in equal parts (Req 4.4). */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-16);
+    padding-block: var(--space-24);
+    padding-inline: var(--space-10);
+    min-height: calc(var(--space-32) * 6);
+  }
+
+  .hero__title {
+    font-size: var(--fs-3xl);
+  }
+
+  .hero__subtitle {
+    font-size: var(--fs-lg);
+  }
+
+  .hero__scene {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: calc(var(--space-32) * 4);
+    border-radius: var(--radius-xl);
+    /* Clip the scaled/blurred aurora so it stays inside the column. */
+    overflow: hidden;
+    /* A soft border to echo Glass_Surface primitives (Req 3.5 alpha range). */
+    border: 1px solid color-mix(in oklch, var(--border-500) 10%, transparent);
+    box-shadow: var(--shadow-2);
+    /* Scene-local tokens (blur kept in the 12–24px band to compose with
+       `--glass-blur` naturally; scale 1.2x matches task 13.1 spec for an
+       "усиленный" aurora visual). See AuroraBackground override below. */
+    --hero-aurora-blur: var(--space-2);
+    --hero-aurora-scale: 1.2;
+  }
+}
+
+@media (min-width: 1440px) {
+  .hero {
+    padding-block: var(--space-28);
+    padding-inline: var(--space-12);
+  }
+
+  .hero__title {
+    font-size: var(--fs-display);
+  }
+}
+
+/*
+ * AuroraBackground overrides inside the hero scene.
+ *
+ * The component renders a `position: fixed; inset: 0` layer by default,
+ * which would make it cover the whole viewport. Inside the hero's right
+ * column we re-anchor it to the column's bounds and then scale/blur it
+ * for a more intense, "cinematic" visual — Req 4.4.
+ *
+ * All values stay token-driven: the blur magnitude uses `--hero-aurora-blur`
+ * which is defined as a multiple of `--space-*`, and the scale uses a
+ * locally-scoped `--hero-aurora-scale` ratio.
+ */
+.hero__scene .aurora-bg,
+.hero__scene .hero__aurora {
+  position: absolute;
+  inset: 0;
+  /* Stay above the page's background layers but below the text content. */
+  z-index: 0;
+  transform: scale(var(--hero-aurora-scale, 1.2));
+  filter: blur(var(--hero-aurora-blur, var(--space-2)));
+  transition:
+    transform var(--dur-slow) var(--ease-standard),
+    filter var(--dur-slow) var(--ease-standard);
+}
+
+/*
+ * Reduced motion — Req 10.8/10.9 adjacent:
+ * drop the decorative scale/blur transitions entirely so the amplified
+ * aurora settles into its final visual state without any motion cost.
+ * AuroraBackground itself already falls back to a static gradient under
+ * `prefers-reduced-motion: reduce` (Req 3.6), so this block just makes
+ * sure our wrapper's scale/blur don't animate either.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hero__scene .aurora-bg,
+  .hero__scene .hero__aurora {
+    transition-duration: 0ms;
+  }
+}

@@ -1,0 +1,135 @@
+/*
+ * MobileTabBar — Design System v2 shell primitive styles.
+ *
+ * Все величины берутся только из токенов Design_System:
+ *   --space-*, --radius-*, --fs-*, --fw-*, --accent-*, --border-*,
+ *   --surface-*, --dur-*, --ease-*, --z-nav, --glass-blur.
+ * Хардкода цветов / px нет (Requirement 1.8, 1.10).
+ *
+ * Поведение (Requirements 8.1, 8.3, 8.4, 11.8, 22.2):
+ *
+ * - `.mobile-tab-bar` виден только на Viewport_Mobile (`max-width: 767px`).
+ *   На Tablet/Desktop/Wide контейнер принудительно скрыт через `display: none`,
+ *   чтобы он не занимал место в layout и не перехватывал события.
+ * - Тень-«плавающая» позиция: `position: fixed; bottom: 0; left: 0; right: 0`
+ *   (Requirement 8.4 — закреплён над safe-area-inset-bottom).
+ * - `padding-bottom: env(safe-area-inset-bottom)` даёт отступ под чёлкой
+ *   iOS / gesture-area Android; стартового `padding-bottom` нет, т.к.
+ *   safe-area-inset сам по себе служит нижним отступом.
+ * - `z-index: var(--z-nav)` — тот же слой, что и Sidebar (см. design.md,
+ *   "Слои и z-index").
+ *
+ * Glass-поверхность (Requirements 3.4, 3.5, 8.4) приходит через класс `.glass`
+ * из `globals.css` — здесь CSS-градиентов и alpha-заливок нет.
+ */
+
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  z-index: var(--z-nav);
+
+  /* safe-area-inset-bottom снизу — ключевой отступ. Горизонтальный gutter
+     через safe-area-inset-left/right, чтобы на устройствах с «ушами»
+     (альбомная ориентация iPhone) крайние табы не уезжали под чёлку. */
+  padding-top: var(--space-1);
+  padding-right: max(var(--space-2), env(safe-area-inset-right));
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: max(var(--space-2), env(safe-area-inset-left));
+
+  /* Скрыт по умолчанию (mobile-first: адаптация приходит только через
+     min-width, но здесь мы наоборот — компонент живёт исключительно
+     на Viewport_Mobile, поэтому показываем его через max-width). */
+  display: none;
+}
+
+/* Viewport_Mobile: `< 768px` — единственный режим, в котором tab-bar
+   рендерится визуально (Requirement 8.1). */
+@media (max-width: 767px) {
+  .mobile-tab-bar:not([aria-hidden='true']) {
+    display: block;
+  }
+}
+
+.mobile-tab-bar__list {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: var(--space-1);
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-tab-bar__item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.mobile-tab-bar__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+
+  /* Touch-target ≥ 44×44 на Viewport_Mobile (Requirement 11.8).
+     `min-height: var(--space-11)` = 44px; flex: 1 1 0 у `__item`
+     гарантирует ≥ 44px по ширине, когда таб-баров ≤ 5 и доступна
+     ширина экрана ≥ 375px. */
+  min-height: var(--space-11);
+  width: 100%;
+
+  padding: var(--space-1) var(--space-2);
+
+  color: var(--border-500);
+  font-size: var(--fs-xs, var(--text-xs));
+  font-weight: var(--fw-medium, var(--font-weight-medium));
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+
+  border-radius: var(--radius-md);
+
+  transition: color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+
+  /* Touch-устройствам отключаем системные highlight/outline браузера,
+     а свой focus-ring оставляем через :focus-visible ниже. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab-bar__link:hover {
+  color: var(--accent-700);
+}
+
+.mobile-tab-bar__link[aria-current='page'] {
+  color: var(--accent-600);
+  background-color: color-mix(in oklch, var(--accent-600) 12%, transparent);
+}
+
+/* Видимый focus-ring с контрастом ≥ 3:1 (Requirement 11.3). */
+.mobile-tab-bar__link:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+}
+
+.mobile-tab-bar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Размер иконки задаётся родителем через SVG width/height, который
+     приходит из ReactNode снаружи. Здесь только flex-контейнер. */
+}
+
+.mobile-tab-bar__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

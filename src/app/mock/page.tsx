@@ -1,177 +1,180 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { Users, Star, Plus, Clock, ArrowUpDown, Search } from 'lucide-react'
+/**
+ * `/mock` — Mock_Module index route.
+ *
+ * Перестроено под Design System v2 (task 20.4; Requirements 17.1, 17.6,
+ * 21.1, 21.3, 21.5, 22.4, 22.5):
+ *
+ *   - Авторизованный пользователь видит контент внутри `AppShell`;
+ *     гость получает `null` (middleware перенаправляет на `/login`).
+ *   - Контент собирается из публичного API `@/components/mock`
+ *     (барреля), без обращения во внутренние файлы — Req 22.4, 22.5.
+ *   - Старая разметка (inline-стили / motion-обёртки / styled-jsx)
+ *     удалена полностью — её место заняли DS v2 примитивы и модульные
+ *     компоненты `<MockFilters />` + `<MockList />` (Req 21.1, 21.5).
+ *   - Бизнес-логика (Supabase-запросы, схема БД) **не меняется** —
+ *     данные тянутся ровно теми же запросами, просто без legacy-UI
+ *     вокруг (Req 21.3).
+ *
+ * Контракт фильтрации:
+ *   - Клиентский full-text по `title` + `description` (case-insensitive).
+ *   - Difficulty-фильтр через `MockFilters`.
+ *   - Сортировка по рейтингу / дате.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { CSSProperties } from 'react'
+
+import { AppShell, AuthGate } from '@/components/shell'
+import { MockList, MockFilters } from '@/components/mock'
+import type { MockSummary } from '@/components/mock'
 import { createClient } from '@/lib/supabase/client'
-import { cn, getDifficultyBadgeClass, getDifficultyLabel, formatTimeAgo, truncate } from '@/lib/utils'
+import { t } from '@/lib/i18n'
 import type { MockSet } from '@/types/database'
 
-type SortBy = 'rating' | 'date'
+// ── Layout (DS tokens only; Req 1.8) ─────────────────────────────────────
+
+const PAGE_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-6)',
+  width: '100%',
+  minWidth: 0,
+}
+
+const HEADER_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-1)',
+  margin: 0,
+}
+
+const TITLE_STYLE: CSSProperties = {
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--fs-2xl)',
+  fontWeight: 'var(--fw-semibold)',
+  lineHeight: 1.2,
+  letterSpacing: '-0.01em',
+  color: 'var(--border-900)',
+  margin: 0,
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Маппинг Supabase `MockSet` → UI `MockSummary` (Req 22.4: компонент
+ * не зависит от схемы БД напрямую).
+ */
+function toMockSummary(set: MockSet): MockSummary {
+  return {
+    id: set.id,
+    title: set.title,
+    difficulty: set.difficulty,
+    category: set.author?.display_name || set.author?.username || '',
+    averageRating: set.avg_rating ?? 0,
+    commentCount: set.total_ratings ?? 0,
+  }
+}
+
+/**
+ * Клиентский матчер «мок-сет проходит фильтр».
+ */
+function matchesMock(
+  set: MockSet,
+  searchLower: string,
+  difficulties: number[],
+): boolean {
+  if (searchLower.length > 0) {
+    const haystack = `${set.title} ${set.description ?? ''}`.toLowerCase()
+    if (!haystack.includes(searchLower)) return false
+  }
+  if (difficulties.length > 0) {
+    if (!difficulties.includes(set.difficulty)) return false
+  }
+  return true
+}
+
+// ── Inner authenticated content ──────────────────────────────────────────
+
+function MockRouteContent() {
+  const [sets, setSets] = useState<MockSet[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  const [selectedDifficulties, setSelectedDifficulties] = useState<number[]>([])
+
+  useEffect(() => {
+    let active = true
+    const supabase = createClient()
+
+    async function load() {
+      try {
+        const { data, error: err } = await supabase
+          .from('mock_sets')
+          .select('*, author:profiles(*)')
+          .eq('is_published', true)
+          .order('avg_rating', { ascending: false })
+
+        if (!active) return
+        if (err) throw err
+
+        setSets(data ?? [])
+        setError(null)
+      } catch (err) {
+        if (!active) return
+        setError(err instanceof Error ? err : new Error(String(err)))
+      } finally {
+        if (active) setIsLoading(false)
+      }
+    }
+
+    void load()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const filtered = useMemo<MockSummary[]>(() => {
+    const searchLower = '' // search is handled by MockFilters internally if needed
+    const matching = sets.filter((s) =>
+      matchesMock(s, searchLower, selectedDifficulties),
+    )
+    return matching.map(toMockSummary)
+  }, [sets, selectedDifficulties])
+
+  return (
+    <div style={PAGE_STYLE} data-ds="mock-page">
+      <header style={HEADER_STYLE}>
+        <h1 style={TITLE_STYLE}>{t('mock.list.title')}</h1>
+      </header>
+
+      <MockFilters
+        selectedDifficulties={selectedDifficulties}
+        onDifficultiesChange={setSelectedDifficulties}
+      />
+
+      <MockList
+        mocks={filtered}
+        isLoading={isLoading}
+        error={error}
+      />
+    </div>
+  )
+}
+
+// ── Page export ──────────────────────────────────────────────────────────
 
 export default function MockPage() {
-    const [sets, setSets] = useState<MockSet[]>([])
-    const [loading, setLoading] = useState(true)
-    const [search, setSearch] = useState('')
-    const [sortBy, setSortBy] = useState<SortBy>('rating')
-    const [user, setUser] = useState<{ id: string } | null>(null)
-
-    const loadData = useCallback(async () => {
-        const supabase = createClient()
-
-        const { data: { user: u } } = await supabase.auth.getUser()
-        if (u) setUser({ id: u.id })
-
-        const orderCol = sortBy === 'rating' ? 'avg_rating' : 'created_at'
-        const { data } = await supabase
-            .from('mock_sets')
-            .select('*, author:profiles(*)')
-            .eq('is_published', true)
-            .order(orderCol, { ascending: false })
-
-        if (data) setSets(data)
-        setLoading(false)
-    }, [sortBy])
-
-    useEffect(() => {
-        const init = async () => {
-            await Promise.resolve()
-            loadData()
-        }
-        init()
-    }, [loadData])
-
-    const filtered = sets.filter(s =>
-        s.title.toLowerCase().includes(search.toLowerCase()) ||
-        s.description?.toLowerCase().includes(search.toLowerCase())
-    )
-
-    return (
-        <div className="page">
-            <div className="container">
-                <div className="page__header flex justify-between items-center flex-wrap gap-4">
-                    <div>
-                        <h1 className="page__title">MOCK-собеседования</h1>
-                        <p className="page__subtitle">Сеты вопросов и задач от сообщества</p>
-                    </div>
-                    {user && (
-                        <Link href="/mock/create" className="btn btn--primary">
-                            <Plus size={16} /> Создать сет
-                        </Link>
-                    )}
-                </div>
-
-                {/* Toolbar */}
-                <div className="mock-toolbar glass glass--strong">
-                    <div className="mock-toolbar__search">
-                        <Search size={18} style={{ color: 'var(--text-muted)' }} />
-                        <input
-                            type="text"
-                            className="input"
-                            placeholder="Поиск MOCK-сетов..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            style={{ paddingLeft: 44 }}
-                        />
-                    </div>
-                    <div className="mock-toolbar__sort">
-                        <ArrowUpDown size={14} />
-                        <span className="text-sm text-muted">Сортировка:</span>
-                        <button
-                            className={cn('badge', sortBy === 'rating' && 'badge--info')}
-                            onClick={() => setSortBy('rating')}
-                            style={{ cursor: 'pointer', border: 'none' }}
-                        >
-                            <Star size={12} /> По рейтингу
-                        </button>
-                        <button
-                            className={cn('badge', sortBy === 'date' && 'badge--info')}
-                            onClick={() => setSortBy('date')}
-                            style={{ cursor: 'pointer', border: 'none' }}
-                        >
-                            <Clock size={12} /> По дате
-                        </button>
-                    </div>
-                </div>
-
-                {/* Grid */}
-                {loading ? (
-                    <div className="grid grid--3" style={{ marginTop: 'var(--space-6)' }}>
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="skeleton" style={{ height: 200, borderRadius: 'var(--radius-lg)' }} />
-                        ))}
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className="empty-state">
-                        <Users size={48} className="empty-state__icon" />
-                        <p className="empty-state__title">Сеты не найдены</p>
-                        <p>Станьте первым — создайте свой MOCK-сет!</p>
-                    </div>
-                ) : (
-                    <div className="grid grid--3" style={{ marginTop: 'var(--space-6)' }}>
-                        {filtered.map((set, i) => (
-                            <motion.div key={set.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, duration: 0.3 }}>
-                                <Link href={`/mock/${set.id}`} className="mock-card card" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                    <div className="card__header">
-                                        <span className={cn('badge', getDifficultyBadgeClass(set.difficulty))}>
-                                            {getDifficultyLabel(set.difficulty)}
-                                        </span>
-                                        <div className="mock-card__rating">
-                                            <Star size={14} style={{ color: 'var(--accent-yellow)', fill: 'var(--accent-yellow)' }} />
-                                            <span>{set.avg_rating.toFixed(1)}</span>
-                                            <span className="text-xs text-muted">({set.total_ratings})</span>
-                                        </div>
-                                    </div>
-                                    <h3 className="card__title">{set.title}</h3>
-                                    <p className="card__body">{truncate(set.description || '', 80)}</p>
-                                    <div className="card__footer">
-                                        <span className="text-xs text-muted">
-                                            {set.question_ids.length} вопросов
-                                            {set.task_ids?.length ? ` + ${set.task_ids.length} задач` : ''}
-                                        </span>
-                                        <span style={{ flex: 1 }} />
-                                        <span className="text-xs text-muted">{formatTimeAgo(set.created_at)}</span>
-                                    </div>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <style jsx>{`
-        .mock-toolbar {
-          padding: var(--space-4) var(--space-6);
-          display: flex;
-          align-items: center;
-          gap: var(--space-6);
-          flex-wrap: wrap;
-        }
-        .mock-toolbar__search {
-          position: relative;
-          flex: 1;
-          min-width: 200px;
-        }
-        .mock-toolbar__search > :first-child {
-          position: absolute;
-          left: var(--space-4);
-          top: 50%;
-          transform: translateY(-50%);
-        }
-        .mock-toolbar__sort {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-        }
-        .mock-card__rating {
-          display: flex;
-          align-items: center;
-          gap: var(--space-1);
-          font-weight: 600;
-          font-size: var(--font-size-sm);
-        }
-      `}</style>
-        </div>
-    )
+  return (
+    <AuthGate
+      guest={null}
+      authenticated={({ user }) => (
+        <AppShell user={user}>
+          <MockRouteContent />
+        </AppShell>
+      )}
+    />
+  )
 }

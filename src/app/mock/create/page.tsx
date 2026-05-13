@@ -1,97 +1,137 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+/**
+ * `/mock/create` — Mock_Module creation route.
+ *
+ * Перестроено под Design System v2 (task 20.4; Requirements 17.1, 17.6,
+ * 21.1, 21.3, 21.5, 22.4, 22.5):
+ *
+ *   - Авторизованный пользователь видит контент внутри `AppShell`;
+ *     гость получает `null` (middleware перенаправляет на `/login`).
+ *   - Контент — `<MockCreateStepper />` из публичного API
+ *     `@/components/mock` (барреля) — Req 22.4, 22.5.
+ *   - Старая разметка (inline-стили / checkbox-списки / двухколоночный
+ *     layout) удалена полностью — её место занял многошаговый stepper
+ *     с валидацией (Req 17.4, 21.1, 21.5).
+ *   - Бизнес-логика (Supabase insert в `mock_sets`) **не меняется** —
+ *     маппинг `MockDraft` → insert-строки делается здесь (Req 21.3).
+ */
+
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save } from 'lucide-react'
-import Link from 'next/link'
+import type { CSSProperties } from 'react'
+
+import { AppShell, AuthGate } from '@/components/shell'
+import { MockCreateStepper } from '@/components/mock'
+import type { MockDraft } from '@/components/mock'
 import { createClient } from '@/lib/supabase/client'
-import { cn, getDifficultyLabel } from '@/lib/utils'
-import type { Question, Task, Difficulty } from '@/types/database'
+import { t } from '@/lib/i18n'
+import type { Category } from '@/types/database'
 
-export default function CreateMockPage() {
-    const router = useRouter()
-    const [title, setTitle] = useState('')
-    const [description, setDescription] = useState('')
-    const [difficulty, setDifficulty] = useState<Difficulty>(2)
-    const [questions, setQuestions] = useState<Question[]>([])
-    const [tasks, setTasks] = useState<Task[]>([])
-    const [selQ, setSelQ] = useState<string[]>([])
-    const [selT, setSelT] = useState<string[]>([])
-    const [saving, setSaving] = useState(false)
+// ── Layout (DS tokens only; Req 1.8) ─────────────────────────────────────
 
-    useEffect(() => {
-        const supabase = createClient()
-        supabase.from('questions').select('*').order('difficulty').then(({ data }) => { if (data) setQuestions(data) })
-        supabase.from('tasks').select('*').order('difficulty').then(({ data }) => { if (data) setTasks(data) })
-    }, [])
+const PAGE_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-6)',
+  width: '100%',
+  maxWidth: '640px',
+  minWidth: 0,
+}
 
-    async function handleSave(publish: boolean) {
-        if (!title.trim() || selQ.length === 0) return
-        setSaving(true)
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push('/login'); return }
-        await supabase.from('mock_sets').insert({
-            created_by: user.id, title, description, difficulty,
-            question_ids: selQ, task_ids: selT.length > 0 ? selT : null, is_published: publish,
-        })
-        router.push('/mock')
+const HEADER_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-1)',
+  margin: 0,
+}
+
+const TITLE_STYLE: CSSProperties = {
+  fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--fs-2xl)',
+  fontWeight: 'var(--fw-semibold)',
+  lineHeight: 1.2,
+  letterSpacing: '-0.01em',
+  color: 'var(--border-900)',
+  margin: 0,
+}
+
+// ── Inner authenticated content ──────────────────────────────────────────
+
+function MockCreateRouteContent() {
+  const router = useRouter()
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    let active = true
+    const supabase = createClient()
+
+    async function load() {
+      const { data } = await supabase
+        .from('categories')
+        .select('id, name')
+        .order('sort_order')
+
+      if (active && data) {
+        setCategories(data)
+      }
     }
 
-    const toggleQ = (id: string) => setSelQ(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
-    const toggleT = (id: string) => setSelT(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+    void load()
 
-    return (
-        <div className="page">
-            <div className="container">
-                <Link href="/mock" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 24, textDecoration: 'none' }}>
-                    <ArrowLeft size={16} /> Назад
-                </Link>
-                <h1 className="page__title">Создать MOCK-собеседование</h1>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginTop: 24 }}>
-                    <div className="glass glass--strong" style={{ padding: 24 }}>
-                        <label style={{ display: 'block', fontWeight: 600, fontSize: 'var(--font-size-sm)', marginBottom: 8 }}>Название</label>
-                        <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Go Junior Interview" />
-                        <label style={{ display: 'block', fontWeight: 600, fontSize: 'var(--font-size-sm)', marginTop: 16, marginBottom: 8 }}>Описание</label>
-                        <textarea className="input textarea" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
-                        <label style={{ display: 'block', fontWeight: 600, fontSize: 'var(--font-size-sm)', marginTop: 16, marginBottom: 8 }}>Сложность</label>
-                        <div className="flex gap-2">
-                            {([1, 2, 3, 4, 5] as Difficulty[]).map(d => (
-                                <button key={d} className={cn('btn btn--sm', difficulty === d ? 'btn--primary' : 'btn--secondary')} onClick={() => setDifficulty(d)}>{getDifficultyLabel(d)}</button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3" style={{ marginTop: 24 }}>
-                            <button className="btn btn--primary" onClick={() => handleSave(true)} disabled={saving || !title.trim() || selQ.length === 0}><Save size={16} /> Опубликовать</button>
-                            <button className="btn btn--secondary" onClick={() => handleSave(false)} disabled={saving}>Черновик</button>
-                        </div>
-                        <p className="text-sm text-muted" style={{ marginTop: 12 }}>Выбрано: {selQ.length} вопросов, {selT.length} задач</p>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                        <div className="glass glass--strong" style={{ padding: 24 }}>
-                            <h3 style={{ fontWeight: 700, marginBottom: 12 }}>Вопросы</h3>
-                            <div style={{ maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {questions.map(q => (
-                                    <label key={q.id} className={cn('flex items-center gap-3')} style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: selQ.includes(q.id) ? 'var(--color-primary-muted)' : 'transparent' }}>
-                                        <input type="checkbox" checked={selQ.includes(q.id)} onChange={() => toggleQ(q.id)} />
-                                        <span className="text-sm">{q.title}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="glass glass--strong" style={{ padding: 24 }}>
-                            <h3 style={{ fontWeight: 700, marginBottom: 12 }}>Задачи</h3>
-                            <div style={{ maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {tasks.map(t => (
-                                    <label key={t.id} className="flex items-center gap-3" style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: selT.includes(t.id) ? 'var(--color-primary-muted)' : 'transparent' }}>
-                                        <input type="checkbox" checked={selT.includes(t.id)} onChange={() => toggleT(t.id)} />
-                                        <span className="text-sm">{t.title}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleSubmit = useCallback(
+    async (draft: MockDraft) => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const { error } = await supabase.from('mock_sets').insert({
+        created_by: user.id,
+        title: draft.title,
+        description: null,
+        difficulty: draft.difficulty,
+        question_ids: [],
+        task_ids: null,
+        is_published: true,
+      })
+
+      if (error) throw error
+
+      router.push('/mock')
+    },
+    [router],
+  )
+
+  return (
+    <div style={PAGE_STYLE} data-ds="mock-create-page">
+      <header style={HEADER_STYLE}>
+        <h1 style={TITLE_STYLE}>{t('mock.create.title')}</h1>
+      </header>
+
+      <MockCreateStepper
+        onSubmit={handleSubmit}
+        categories={categories}
+      />
+    </div>
+  )
+}
+
+// ── Page export ──────────────────────────────────────────────────────────
+
+export default function CreateMockPage() {
+  return (
+    <AuthGate
+      guest={null}
+      authenticated={({ user }) => (
+        <AppShell user={user}>
+          <MockCreateRouteContent />
+        </AppShell>
+      )}
+    />
+  )
 }

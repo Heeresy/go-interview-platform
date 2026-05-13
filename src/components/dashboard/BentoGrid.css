@@ -1,0 +1,92 @@
+/*
+ * BentoGrid / BentoItem — Design System v2 layout styles.
+ *
+ * Все величины берутся только из токенов Design_System:
+ *   --space-*, и `minmax(140px, auto)` — единственное «хардкод»-
+ *   значение, явно разрешённое постановкой задачи (min row-height
+ *   для бенто-сетки). Иных литералов нет (Requirement 1.8, 22.4).
+ *
+ * Поведение (Requirements 5.2, 22.4, 9.3):
+ *
+ *   - Default (desktop/tablet, ≥ 768px): 12-колоночный grid
+ *     `repeat(12, 1fr)` с `grid-auto-rows: minmax(140px, auto)` и
+ *     `gap: var(--space-4)` — канонический бенто-грид по design.md
+ *     и прямому контракту задачи 14.1.
+ *
+ *   - Viewport_Mobile (< 768px): коллапс в одну колонку
+ *     (`grid-template-columns: 1fr`). На этой ширине `colSpan`,
+ *     который BentoItem проставляет через inline-style как
+ *     `grid-column: span N`, перезаписывается правилом
+ *     `.bento-grid > .bento-item { grid-column: 1 / -1 !important; }`.
+ *     Это закрывает контракт задачи «на Mobile colSpan
+ *     игнорируется, один столбец». `!important` здесь уместен:
+ *     BentoItem намеренно владеет grid-placement на Desktop через
+ *     inline-style, и без `!important` media-override проиграет
+ *     specificity-битву с inline-style.
+ *
+ *   - `grid-auto-rows: minmax(140px, auto)` — минимальная высота
+ *     строки 140px, но она может расти вверх, если контент
+ *     больше. Это «якорь» бенто-композиции: без него маленькие
+ *     карточки слипались бы в узкие полоски.
+ *
+ *   - `gap: var(--space-4)` (16px) по умолчанию. Переопределяется
+ *     через CSS custom property `--bento-grid-gap`, которую
+ *     компонент `<BentoGrid gap="..." />` проставляет в inline-стиле.
+ *
+ *   - `min-width: 0` на контейнере и grid-ребёнке — классический
+ *     fix для CSS Grid, чтобы контент внутри карточек мог корректно
+ *     сжиматься (иначе `min-content` дочек ломает fr-distribution).
+ */
+
+.bento-grid {
+  display: grid;
+  /* Mobile-first: одна колонка (Req 9.3). Desktop/tablet
+     переопределяют правило через min-width media query ниже. */
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(140px, auto);
+  gap: var(--bento-grid-gap, var(--space-4));
+  min-width: 0;
+  width: 100%;
+}
+
+/*
+ * Desktop/Tablet (≥ 768px): 12-колоночная бенто-сетка (Req 5.2).
+ * Инлайн `grid-column: span N` и `grid-row: span N` у BentoItem
+ * в этой ветке работают нормально — браузер клампит span до числа
+ * доступных колонок, так что N > 12 не ломает layout.
+ */
+@media (min-width: 768px) {
+  .bento-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+/*
+ * BentoItem — обёртка одного ребёнка. Span-значения приходят
+ * через inline `style` (см. BentoItem.tsx). Здесь — только
+ * общие правила, едины для всех брейкпоинтов.
+ */
+.bento-item {
+  /* min-width/min-height: 0 — чтобы содержимое с `overflow`
+     (например, Skeleton на всю ширину) корректно сжималось
+     в grid-ячейке на всех брейкпоинтах. */
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+ * Mobile override (< 768px): принудительно растягиваем каждый
+ * BentoItem на всю ширину единственной колонки, перекрывая
+ * inline `grid-column: span N`, который BentoItem проставляет
+ * для Desktop-контракта. `!important` обязательно — без него
+ * inline-style выигрывает по specificity.
+ *
+ * `grid-row` inline-стиль мы не переопределяем: `span N` строк
+ * в одноколоночной сетке корректно превращается в N строк
+ * auto-rows и даёт консистентную минимальную высоту плитки.
+ */
+@media (max-width: 767px) {
+  .bento-grid > .bento-item {
+    grid-column: 1 / -1 !important;
+  }
+}

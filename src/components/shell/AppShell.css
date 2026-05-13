@@ -1,0 +1,169 @@
+/*
+ * AppShell — Design System v2 layout primitive styles.
+ *
+ * Все величины берутся только из токенов Design_System:
+ *   --space-*, --radius-*, --fs-*, --border-*, --surface-*,
+ *   --dur-*, --ease-*, --z-*.
+ * Хардкода цветов / px нет (Requirement 1.8, 1.10, 22.2).
+ *
+ * Поведение (Requirements 6.1, 6.8, 8.1, 8.2, 8.5, 9.1, 9.2, 9.3):
+ *
+ *   - Mobile-first базовая раскладка (Req 9.3): по умолчанию grid = 1
+ *     колонка (только контент), Sidebar скрыт через `display: none`.
+ *     Это применяется к Viewport_Mobile (< 768px) и каскадно
+ *     перезаписывается медиа-запросами `min-width: 768px` и выше.
+ *
+ *   - На Tablet (≥ 768px) показываем **только** сайдбар-инстанс
+ *     `.app-shell__sidebar--tablet` (collapsed). Desktop-инстанс
+ *     `.app-shell__sidebar--desktop` остаётся скрытым.
+ *
+ *   - На Desktop/Wide (≥ 1024px) — наоборот: показываем
+ *     `.app-shell__sidebar--desktop`, `…--tablet` скрыт. Такая «двух-
+ *     инстансная» схема нужна, чтобы SSR выдал корректную HTML-разметку
+ *     под любой брейкпоинт без JS-ветвления на match-media.
+ *
+ *   - Max-width контента 1440px + центрирование выполнено через
+ *     `.app-shell__main-inner { max-width: min(1440px, 100%); margin-inline: auto; }`
+ *     (Req 9.2). 1440px = `calc(var(--space-32) * 11.25)` — чтобы
+ *     остаться в рамках DS-токенов. Используем именно такой расчёт
+ *     на базе `--space-32` (128px).
+ *
+ *   - Sticky-поведение `Topbar` уже задано в `Topbar.css`. AppShell
+ *     должен только гарантировать, что `.app-shell__content` — это
+ *     скроллируемый контейнер с высотой ≥ viewport, чтобы sticky
+ *     не «прыгал» (но фактически скроллится `<html>`, что тоже ок).
+ */
+
+.app-shell {
+  /* Базовый mobile-first layout: одна колонка, без сайдбара.
+     Min-height 100dvh, чтобы фон аппликейшна заполнял экран и
+     `MobileTabBar` (fixed внизу) не оставлял пустоту под контентом
+     для коротких страниц. */
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas: 'content';
+
+  width: 100%;
+  min-height: 100dvh;
+
+  /* Никаких отступов здесь — фон идёт из AuroraBackground в корне. */
+  background: transparent;
+
+  /* На Mobile MobileTabBar плавающий; добавляем отступ снизу, чтобы
+     конец контента не перекрывался табом.
+     `--space-16` = 64px + safe-area; переопределяется на Tablet+
+     в `@media (min-width: 768px)`. */
+  padding-bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
+}
+
+/* ---- Sidebar visibility по брейкпоинтам -------------------------------- */
+
+/* Mobile-first: оба инстанса скрыты. `display: none` полностью выкидывает
+   сайдбар из grid-потока, поэтому grid-template-columns остаётся с одной
+   колонкой и контент тянется на всю ширину (Req 8.1, 8.2). */
+.app-shell__sidebar {
+  display: none;
+}
+
+/* Общая grid-позиция для видимого инстанса. */
+.app-shell__sidebar--tablet,
+.app-shell__sidebar--desktop {
+  grid-area: sidebar;
+}
+
+/* ---- Content column -------------------------------------------------- */
+
+.app-shell__content {
+  grid-area: content;
+
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100dvh;
+}
+
+/* Контент ниже Topbar. Sticky-topbar уже выше в потоке; флекс-ребёнок
+   main разделяет оставшееся пространство. */
+.app-shell__main {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  /* Отступ между Topbar и контентом. На Mobile делаем чуть меньше,
+     чтобы максимизировать полезную зону. */
+  padding-block: var(--space-4) var(--space-6);
+  padding-inline: max(var(--space-4), env(safe-area-inset-left))
+    max(var(--space-4), env(safe-area-inset-right));
+}
+
+/* Req 9.2: max-width контента 1440px + центрирование.
+   1440px = var(--space-32) (128px) × 11.25. Используем `calc`, чтобы
+   не плодить новый токен специально под эту величину. */
+.app-shell__main-inner {
+  width: 100%;
+  max-width: min(calc(var(--space-32) * 11.25), 100%);
+  margin-inline: auto;
+}
+
+/* ---- Tablet: 768px – 1023px ----------------------------------------- */
+
+@media (min-width: 768px) {
+  .app-shell {
+    /* Двух-колонная раскладка: sidebar | content. `auto` оставляет
+       сайдбару его intrinsic width (которая = var(--space-18) в
+       collapsed режиме для Tablet и до 256px в expanded). */
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 'sidebar content';
+
+    /* На Tablet/Desktop/Wide tab-bar не показывается — убираем
+       нижний отступ, добавлявшийся под него на Mobile. */
+    padding-bottom: 0;
+  }
+
+  /* Показываем `--tablet` инстанс (collapsed) до Desktop-брейкпоинта. */
+  .app-shell__sidebar--tablet {
+    display: flex;
+  }
+}
+
+/* ---- Desktop / Wide: ≥ 1024px --------------------------------------- */
+
+@media (min-width: 1024px) {
+  /* Скрываем tablet-инстанс, показываем desktop-инстанс (который
+     читает collapsed-состояние из localStorage — Req 6.4). */
+  .app-shell__sidebar--tablet {
+    display: none;
+  }
+
+  .app-shell__sidebar--desktop {
+    display: flex;
+  }
+
+  .app-shell__main {
+    padding-block: var(--space-6);
+    padding-inline: var(--space-6);
+  }
+}
+
+/* ---- Wide: ≥ 1440px --------------------------------------------------- */
+
+/*
+ * На Wide дополнительный inline-padding не нужен — `.app-shell__main-inner`
+ * уже ограничивает контент 1440px и центрирует его внутри колонки
+ * `content`. Оставлен явным media-query на случай, если в будущем
+ * понадобится уменьшить gutter при превышении breakpoint.
+ */
+@media (min-width: 1440px) {
+  .app-shell__main {
+    /* Чуть больше воздуха, но не больше максимальной колонки. */
+    padding-inline: var(--space-8);
+  }
+}
+
+/* ---- Reduced motion -------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* AppShell сам по себе не анимируется, но дочерние компоненты
+     (Sidebar transition width, Topbar) приходят с собственными
+     `prefers-reduced-motion`-правилами. Здесь оставляем пустой блок
+     как явную документацию — AppShell не вводит новых анимаций. */
+}

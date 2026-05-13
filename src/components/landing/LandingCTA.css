@@ -1,0 +1,120 @@
+/*
+ * LandingCTA — финальная CTA-секция Public_Landing.
+ *
+ * Все величины — только через токены Design_System (Req 1.8):
+ *   --space-*, --radius-*, --fs-*, --fw-*, --dur-*, --ease-*,
+ *   --accent-*, --border-*, --surface-*, --shadow-*.
+ *
+ * Requirements: 4.2, 4.3, 22.1
+ */
+
+.landing-cta {
+    width: 100%;
+    padding-block: var(--space-14);
+    padding-inline: var(--space-4);
+}
+
+@media (min-width: 768px) {
+    .landing-cta {
+        padding-block: var(--space-20);
+        padding-inline: var(--space-6);
+    }
+}
+
+.landing-cta__inner {
+    max-width: 960px;
+    margin-inline: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+
+    padding: var(--space-10) var(--space-6);
+    border-radius: var(--radius-xl);
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .landing-cta__inner {
+        padding: var(--space-14) var(--space-14);
+        gap: var(--space-10);
+    }
+}
+
+.landing-cta__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.landing-cta__title {
+    font-family: var(--font-sans);
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-semibold);
+    line-height: 1.15;
+    color: var(--border-900);
+    letter-spacing: -0.02em;
+    margin: 0;
+    max-width: 20ch;
+}
+
+@media (min-width: 1024px) {
+    .landing-cta__title {
+        font-size: var(--fs-3xl);
+    }
+}
+
+.landing-cta__subtitle {
+    font-family: var(--font-sans);
+    font-size: var(--fs-md);
+    font-weight: var(--fw-regular);
+    line-height: 1.5;
+    color: var(--border-700);
+    max-width: 52ch;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .landing-cta__subtitle {
+        font-size: var(--fs-lg);
+    }
+}
+
+/* Горизонтальная группа кнопок; на мобилке схлопывается в колонку,
+   чтобы touch-target оставался ≥ 44×44 (Req 11.8 — гарантируется
+   внутри Button.css). */
+.landing-cta__actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: var(--space-32);
+}
+
+@media (min-width: 480px) {
+    .landing-cta__actions {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-4);
+        max-width: none;
+    }
+}
+
+/* Link-обёртка для Button — убираем декор ссылки, кнопка внутри
+   сохраняет свой DS-стиль. */
+.landing-cta__link {
+    display: inline-flex;
+    text-decoration: none;
+    color: inherit;
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.landing-cta__link:focus-visible {
+    box-shadow: 0 0 0 var(--space-1) color-mix(in oklch, var(--accent-600) 45%, transparent);
+}

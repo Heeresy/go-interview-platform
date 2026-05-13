@@ -1,0 +1,162 @@
+/*
+ * SocialProof — Design System v2 landing-section styles.
+ *
+ * Все величины — только через токены Design_System (Req 1.8):
+ *   --space-*, --radius-*, --fs-*, --fw-*, --dur-*, --ease-*,
+ *   --accent-*, --border-*, --surface-*, --shadow-*.
+ *
+ * Placeholder-логотипы — нейтральные `<div>` с фоном `--surface-300`.
+ *
+ * Requirements: 4.2, 22.1
+ */
+
+.social-proof {
+    width: 100%;
+    padding-block: var(--space-10);
+    padding-inline: var(--space-4);
+}
+
+@media (min-width: 768px) {
+    .social-proof {
+        padding-block: var(--space-14);
+        padding-inline: var(--space-6);
+    }
+}
+
+.social-proof__panel {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-6);
+}
+
+@media (min-width: 768px) {
+    .social-proof__panel {
+        padding: var(--space-10) var(--space-10);
+    }
+}
+
+.social-proof__header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+
+    text-align: center;
+
+    margin-bottom: var(--space-8);
+}
+
+.social-proof__title {
+    font-family: var(--font-sans);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    line-height: 1.25;
+    color: var(--border-900);
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .social-proof__title {
+        font-size: var(--fs-xl);
+    }
+}
+
+.social-proof__subtitle {
+    font-family: var(--font-sans);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-regular);
+    line-height: 1.5;
+    color: var(--border-600);
+    max-width: 60ch;
+    margin: 0;
+}
+
+@media (min-width: 768px) {
+    .social-proof__subtitle {
+        font-size: var(--fs-md);
+    }
+}
+
+.social-proof__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-6) var(--space-8);
+
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+@media (min-width: 768px) {
+    .social-proof__list {
+        gap: var(--space-8) var(--space-12);
+    }
+}
+
+.social-proof__item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+
+    color: var(--border-500);
+
+    transition: color var(--dur-base) var(--ease-standard),
+                transform var(--dur-base) var(--ease-spring-soft);
+}
+
+.social-proof__item:hover {
+    color: var(--accent-600);
+    transform: translateY(-2px);
+}
+
+/* Нейтральный placeholder-блок. Фон — строго `--surface-300`
+   (task 13.3), тонкая граница — `--border-500` через color-mix. */
+.social-proof__placeholder {
+    width: var(--space-20);
+    height: var(--space-10);
+    background-color: var(--surface-300);
+    border: 1px solid color-mix(in oklch, var(--border-500) 10%, transparent);
+    border-radius: var(--radius-md);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: background-color var(--dur-base) var(--ease-standard),
+                border-color var(--dur-base) var(--ease-standard);
+}
+
+@media (min-width: 768px) {
+    .social-proof__placeholder {
+        width: var(--space-24);
+        height: var(--space-12);
+    }
+}
+
+.social-proof__item:hover .social-proof__placeholder {
+    background-color: var(--surface-400);
+    border-color: color-mix(in oklch, var(--accent-600) 25%, transparent);
+}
+
+.social-proof__placeholder-mark {
+    font-family: var(--font-sans);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    line-height: 1;
+    color: var(--border-700);
+    letter-spacing: -0.02em;
+}
+
+.social-proof__name {
+    font-family: var(--font-sans);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    line-height: 1;
+    color: inherit;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}

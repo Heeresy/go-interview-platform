@@ -1,0 +1,185 @@
+/*
+ * Topbar — Design System v2 shell primitive styles.
+ *
+ * Все величины берутся только из токенов Design_System:
+ *   --space-*, --radius-*, --fs-*, --fw-*, --accent-*, --border-*,
+ *   --surface-*, --dur-*, --ease-*, --z-sticky, --glass-blur.
+ * Хардкода цветов / px нет (Requirement 1.8, 1.10).
+ *
+ * Поведение (Requirements 6.6, 6.7, 8.6, 8.7, 22.2):
+ *
+ * - `.topbar` — sticky в верхней части области контента (Req 6.7):
+ *   `position: sticky; top: 0; z-index: var(--z-sticky)`. Glass-поверхность
+ *   приходит через класс `.glass` из `globals.css`; здесь только раскладка
+ *   и отступы.
+ * - Радиус скругления в sticky-режиме выставляется в 0, чтобы верх Topbar'а
+ *   прилипал к верхней кромке viewport / контент-области без «выемок».
+ * - `.topbar__menu` — кнопка открытия Drawer на Viewport_Mobile. По умолчанию
+ *   скрыта; показывается только при `max-width: 1023px` (Tablet + Mobile),
+ *   на Desktop/Wide отсутствует в потоке.
+ * - `.topbar__search` — кнопка вызова Command_Palette; центральная колонка.
+ *   Растягивается по max-width внутри выделенного слота. Правый хинт
+ *   (Cmd/Ctrl+K) скрывается на Viewport_Mobile ради места.
+ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+
+  /* Горизонтальный gutter с уважением safe-area (iOS landscape). */
+  padding-inline: max(var(--space-4), env(safe-area-inset-left))
+    max(var(--space-4), env(safe-area-inset-right));
+  padding-block: var(--space-2);
+
+  /* Sticky-поверхность: радиус не нужен, т.к. она примыкает к верху вьюпорта. */
+  border-radius: 0;
+  border-inline: 0;
+  border-top: 0;
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.topbar__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-self: end;
+}
+
+/* Кнопка меню — видна только на Tablet + Mobile (Req 8.6).
+   На Desktop/Wide (≥ 1024px) — `display: none`. */
+.topbar__menu {
+  display: inline-flex;
+}
+
+@media (min-width: 1024px) {
+  .topbar__menu {
+    display: none;
+  }
+}
+
+/* Кнопка Command_Palette. Секонд-вариант Button, нагруженный подсказкой
+   хоткея справа. На Mobile подсказка скрывается (мало места). */
+.topbar__search {
+  width: 100%;
+  max-width: calc(var(--space-32) * 3);
+  justify-content: space-between;
+}
+
+.topbar__search-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--border-700);
+  font-weight: var(--fw-medium, var(--font-weight-medium));
+}
+
+.topbar__search-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  padding-block: var(--space-0-5, var(--space-1));
+
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium, var(--font-weight-medium));
+  color: var(--border-700);
+
+  background: color-mix(in oklch, var(--surface-500) 40%, transparent);
+  border: 1px solid
+    color-mix(in oklch, var(--border-500) 18%, transparent);
+  border-radius: var(--radius-sm);
+
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .topbar__search-hint {
+    display: none;
+  }
+}
+
+/* Drawer-меню на Mobile: список ссылок. */
+.topbar__drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.topbar__drawer-item {
+  width: 100%;
+}
+
+.topbar__drawer-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  width: 100%;
+  /* Touch-target ≥ 44×44 на Mobile (Req 11.8). */
+  min-height: var(--space-11);
+  padding-inline: var(--space-3);
+  padding-block: var(--space-2);
+
+  color: var(--border-800);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium, var(--font-weight-medium));
+  text-decoration: none;
+
+  border-radius: var(--radius-md);
+
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.topbar__drawer-link:hover {
+  background: color-mix(in oklch, var(--surface-500) 40%, transparent);
+  color: var(--border-900);
+}
+
+.topbar__drawer-link[aria-current='page'] {
+  color: var(--accent-600);
+  background: color-mix(in oklch, var(--accent-600) 12%, transparent);
+}
+
+.topbar__drawer-link:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+}
+
+.topbar__drawer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar__drawer-link {
+    transition-duration: 0ms;
+  }
+}

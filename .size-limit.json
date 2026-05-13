@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Public_Landing (first-load JS)",
+    "path": [
+      ".next/static/chunks/webpack-*.js",
+      ".next/static/chunks/framework-*.js",
+      ".next/static/chunks/main-*.js",
+      ".next/static/css/**/*.css",
+      ".next/static/chunks/pages/_app-*.js",
+      ".next/static/chunks/app/page-*.js",
+      ".next/static/chunks/app/layout-*.js"
+    ],
+    "limit": "180 KB",
+    "gzip": true
+  },
+  {
+    "name": "Dashboard (first-load JS)",
+    "path": [
+      ".next/static/chunks/webpack-*.js",
+      ".next/static/chunks/framework-*.js",
+      ".next/static/chunks/main-*.js",
+      ".next/static/chunks/pages/_app-*.js",
+      ".next/static/chunks/app/tasks/page-*.js",
+      ".next/static/chunks/app/layout-*.js"
+    ],
+    "limit": "220 KB",
+    "gzip": true
+  },
+  {
+    "name": "Monaco NOT in first-load /tasks/[id]",
+    "path": [
+      ".next/static/chunks/app/tasks/[id]/page-*.js"
+    ],
+    "limit": "220 KB",
+    "gzip": true,
+    "ignore": ["monaco-editor", "@monaco-editor"]
+  }
+]

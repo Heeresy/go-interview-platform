@@ -1,0 +1,217 @@
+/*
+ * Sidebar — Design System v2 shell primitive styles.
+ *
+ * Все величины берутся только из токенов Design_System:
+ *   --space-*, --radius-*, --fs-*, --fw-*, --accent-*, --border-*,
+ *   --surface-*, --dur-*, --ease-*, --z-nav.
+ * Хардкода цветов / px нет (Requirement 1.8, 1.10).
+ *
+ * Поведение (Requirements 6.1, 6.3, 6.4, 6.5, 22.2):
+ *
+ * - Ширина в expanded состоянии ≥ 240px; реализовано через
+ *   `calc(var(--space-32) * 2)` = 256px (Req 6.4).
+ * - Ширина в collapsed состоянии ≤ 72px; реализовано через
+ *   `var(--space-18)` = 72px (Req 6.4).
+ * - Переключение ширины анимируется токенами motion (--dur-base,
+ *   --ease-standard).
+ * - Активный маршрут помечается `data-active="true"` на якоре; акцентный
+ *   индикатор слева — absolute ::before с `background: var(--accent-600)`
+ *   (Req 6.3).
+ * - В collapsed состоянии метка `.sidebar__label` скрывается визуально
+ *   (ширина 0, overflow hidden), и текст остаётся доступным для скринридеров
+ *   только если вне ::before; для hover-подсказки лейблы дублируются через
+ *   `<Tooltip>` из `@/components/ui` (Req 6.5).
+ *
+ * Glass-поверхность (Requirements 3.4, 3.5) приходит через класс `.glass`
+ * из `globals.css` — здесь CSS-градиентов и alpha-заливок нет.
+ */
+
+.sidebar {
+  /* Позиционирование внутри App_Shell: sidebar — sticky-колонка слева.
+     Реальное позиционирование (fixed / sticky) настраивается родителем
+     AppShell; здесь задаём только размеры и внутренние отступы. */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+
+  /* Высота sidebar занимает всю видимую область окна. */
+  height: 100vh;
+  max-height: 100dvh;
+
+  /* Ширина: expanded ≥ 240px (Req 6.4) */
+  width: calc(var(--space-32) * 2);
+  min-width: calc(var(--space-32) * 2);
+
+  display: flex;
+  flex-direction: column;
+
+  padding: var(--space-4) var(--space-3);
+  gap: var(--space-3);
+
+  z-index: var(--z-nav);
+
+  /* Переход между expanded ↔ collapsed.
+     Анимируем только размерные свойства — цвета приходят через .glass. */
+  transition:
+    width var(--dur-base) var(--ease-standard),
+    min-width var(--dur-base) var(--ease-standard),
+    padding var(--dur-base) var(--ease-standard);
+
+  /* .glass уже задаёт border-radius: var(--radius-lg) и рамку; на крайней
+     колонке скруглённый левый край визуально ненужен — убираем его, чтобы
+     сайдбар «приклеивался» к границе экрана. */
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* Collapsed: ≤ 72px (Req 6.4) */
+.sidebar[data-collapsed='true'] {
+  width: var(--space-18);
+  min-width: var(--space-18);
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+.sidebar__nav {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 0;
+  overflow-y: auto;
+
+  /* Скрываем визуальный «шов» скроллбара, когда список помещается. */
+  scrollbar-width: thin;
+}
+
+.sidebar__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar__item {
+  position: relative;
+  min-width: 0;
+}
+
+.sidebar__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  /* Touch-target ≥ 44×44 на мобайле (Req 11.8).
+     `min-height: var(--space-11)` = 44px. Хотя sidebar скрыт на
+     Viewport_Mobile, соблюдаем инвариант для iPad/touch-экранов. */
+  min-height: var(--space-11);
+  width: 100%;
+
+  padding: var(--space-2) var(--space-3);
+
+  color: var(--border-700);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  line-height: 1.2;
+  text-decoration: none;
+
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar__link:hover {
+  color: var(--accent-700);
+  background-color: color-mix(in oklch, var(--surface-500) 40%, transparent);
+}
+
+/* Видимый focus-ring с контрастом ≥ 3:1 (Requirement 11.3). */
+.sidebar__link:focus-visible {
+  outline: 2px solid var(--accent-600);
+  outline-offset: 2px;
+}
+
+/* Акцентный индикатор слева (Req 6.3).
+   Абсолютный ::before — не сдвигает содержимое ссылки при переключении
+   активного состояния. Ширина 2px через border-left эквивалент. */
+.sidebar__link[data-active='true'] {
+  color: var(--accent-600);
+  background-color: color-mix(in oklch, var(--accent-600) 10%, transparent);
+  font-weight: var(--fw-semibold);
+}
+
+.sidebar__link[data-active='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 2px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent-600);
+}
+
+.sidebar__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Размер SVG задаётся родителем через prop `size` lucide-иконки;
+     здесь только flex-контейнер фиксированной ширины, чтобы иконки
+     выровнялись по вертикальной оси независимо от метки. */
+  width: var(--space-5);
+  height: var(--space-5);
+}
+
+.sidebar__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* Плавное исчезновение при схлопывании. */
+  transition:
+    opacity var(--dur-fast) var(--ease-standard),
+    max-width var(--dur-base) var(--ease-standard);
+}
+
+/* Collapsed: скрываем метку визуально; tooltip поверх ссылки показывает
+   её на hover (Req 6.5). */
+.sidebar[data-collapsed='true'] .sidebar__label {
+  opacity: 0;
+  max-width: 0;
+  pointer-events: none;
+}
+
+.sidebar[data-collapsed='true'] .sidebar__link {
+  /* В collapsed-режиме центрируем иконку по горизонтали, убирая gap
+     (который бы оставил «пустой» слот вместо исчезающего лейбла). */
+  justify-content: center;
+  gap: 0;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+/* Нижняя панель с переключателем collapse. */
+.sidebar__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+  border-top: 1px solid
+    color-mix(in oklch, var(--border-500) 10%, transparent);
+}
+
+.sidebar[data-collapsed='true'] .sidebar__footer {
+  justify-content: center;
+}
