@@ -397,7 +397,7 @@ function TaskDetailRouteContent({ taskId }: TaskDetailRouteContentProps) {
                             Array.isArray(
                                 (data.results as { details?: unknown }).details,
                             )
-                                ? ((data.results as { details: never[] }).details)
+                                ? ((data.results as unknown as { details: unknown[] }).details as never[])
                                 : [],
                     },
                     execution_time_ms:
