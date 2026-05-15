@@ -15,7 +15,7 @@ function TrainerContent() {
   const searchParams = useSearchParams()
   const levelParam = Number(searchParams.get('level'))
   const initialLevel: Difficulty =
-    levelParam >= 1 && levelParam <= 5 ? (levelParam as Difficulty) : 1
+    levelParam >= 1 && levelParam <= 5 ? (levelParam as Difficulty) : 2
 
   return (
     <AuthGate

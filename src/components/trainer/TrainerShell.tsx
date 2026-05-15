@@ -235,19 +235,31 @@ export function TrainerShell({
       setSubmitError(false)
       try {
         const supabase = createClient()
-        const { data, error } = await supabase
+        // Try loading questions for the specific difficulty level
+        const initial = await supabase
           .from('questions')
           .select('*, category:categories(*)')
           .eq('difficulty', forLevel)
           .order('created_at')
           .limit(QUESTIONS_PER_BATCH)
-        if (error) {
+        if (initial.error) {
           setPhase('error')
           return
         }
+        let data = initial.data
+        // Fallback: if no questions at this level, load any available questions
         if (!data || data.length === 0) {
-          setPhase('empty')
-          return
+          const fallback = await supabase
+            .from('questions')
+            .select('*, category:categories(*)')
+            .order('difficulty')
+            .order('created_at')
+            .limit(QUESTIONS_PER_BATCH)
+          if (fallback.error || !fallback.data || fallback.data.length === 0) {
+            setPhase('empty')
+            return
+          }
+          data = fallback.data
         }
         setQuestions(data as Question[])
         setPhase('ready')

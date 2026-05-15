@@ -22,7 +22,7 @@ Add for ALL environments:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
-OPENROUTER_API_KEY=your_openrouter_key
+GOOGLE_AI_API_KEY=your_google_ai_key
 NEXT_PUBLIC_SITE_URL=https://your-project.vercel.app
 ```
 **Done!** Your app is LIVE! 🎉

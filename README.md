@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GO Interview Platform
 
-## Getting Started
+Platform for preparing for Go backend interviews: theory questions, coding tasks, a trainer flow, mock interviews, progress tracking, and AI-assisted feedback.
 
-First, run the development server:
+## Stack
+
+- Next.js 16, React 19, TypeScript
+- Supabase Auth, Postgres, and RLS
+- Google Gemini for AI evaluation and assistant features
+- JDoodle primary and Glot fallback for Go code execution
+- Vitest and React Testing Library
+- Sentry, Vercel Analytics, and Speed Insights
+
+## Main Routes
+
+- `/` - public landing for guests, dashboard for signed-in users
+- `/questions` - interview questions and AI evaluation
+- `/tasks` - coding tasks with editor and execution panel
+- `/trainer` - guided practice flow
+- `/mock` - mock interview sets
+- `/profile` - progress and activity
+- `/status` - service configuration status
+
+## Local Development
 
 ```bash
+npm install
+cp .env.local.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+GOOGLE_AI_API_KEY=
+JDOODLE_CLIENT_ID=
+JDOODLE_CLIENT_SECRET=
+GLOT_TOKEN=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
 
-## Learn More
+JDoodle and Glot are used by `/api/execute`. Gemini is used by `/api/evaluate`, `/api/ai-assist`, and `/api/test-ai`.
 
-To learn more about Next.js, take a look at the following resources:
+## Verification
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run type-check
+npm run test:run
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Docs
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `QUICK_START.md` - short deployment path
+- `DEPLOYMENT.md` - deployment and troubleshooting
+- `AI_SETUP.md` - Gemini setup
+- `DATABASE_INDEXES_GUIDE.md` - database performance notes
+- `docs/archive/` - older implementation reports and historical notes

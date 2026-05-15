@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 import { chatCompletion } from '@/lib/ai'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
-export async function GET() {
+export async function GET(request: Request) {
+    const rateLimit = checkRateLimit(request, {
+        key: 'api:test-ai',
+        limit: 5,
+        windowMs: 60_000,
+    })
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit)
+
     const results = {
         timestamp: new Date().toISOString(),
         env: {

@@ -1,101 +1,48 @@
-# 🔧 Настройка AI помощника
+# AI Setup
 
-## Проблема
-При нажатии на значок AI помощника ничего не происходит или появляется ошибка.
+The application currently uses Google Gemini through `@google/generative-ai`.
 
-## Причина
-Скорее всего, не настроена переменная окружения `OPENROUTER_API_KEY` в Vercel.
+## Required Variable
 
----
+Add this server-side environment variable in local development and in Vercel:
 
-## ✅ Инструкция по настройке
-
-### Шаг 1: Получите API ключ OpenRouter
-
-1. Перейдите на [openrouter.ai/keys](https://openrouter.ai/keys)
-2. Зарегистрируйтесь или войдите в аккаунт
-3. Создайте новый API ключ
-4. Скопируйте ключ (начинается с `sk-or-...`)
-
-### Шаг 2: Добавьте ключ в Vercel
-
-1. Откройте [Vercel Dashboard](https://vercel.com/dashboard)
-2. Выберите ваш проект `go-interview-platform`
-3. Перейдите во вкладку **Settings** → **Environment Variables**
-4. Нажмите **Add New**
-5. Введите:
-   - **Name**: `OPENROUTER_API_KEY`
-   - **Value**: `sk-or-...` (ваш ключ)
-   - **Environment**: ✅ Production, ✅ Preview, ✅ Development
-6. Нажмите **Save**
-
-### Шаг 3: Переразверните приложение
-
-1. В Vercel Dashboard перейдите во вкладку **Deployments**
-2. Найдите последний деплой
-3. Нажмите кнопку **Redeploy** (или `...` → **Redeploy**)
-4. Дождитесь завершения деплоя
-
-### Шаг 4: Проверьте статус
-
-1. Откройте ваш сайт
-2. Перейдите на страницу `/status`
-3. Убедитесь, что **OpenRouter AI** показывает ✅
-
-### Шаг 5: Проверьте AI помощника
-
-1. Нажмите на значок 🤖 в правом нижнем углу
-2. Отправьте тестовое сообщение
-3. AI должен ответить
-
----
-
-## 🔍 Диагностика
-
-### Страница статуса
-Откройте `/status` на вашем сайте. Там показан статус всех сервисов.
-
-### Логи Vercel
-1. В Vercel Dashboard перейдите во вкладку **Logs**
-2. Выберите **Production**
-3. Найдите запросы к `/api/ai-assist`
-
-### Возможные ошибки
-
-| Ошибка | Решение |
-|--------|---------|
-| `OPENROUTER_API_KEY is not set` | Добавьте переменную окружения |
-| `Request timeout` | Проверьте интернет-соединение или попробуйте позже |
-| `Rate limited` | Подождите несколько секунд и повторите |
-| `AI assistant is temporarily unavailable` | Проверьте статус OpenRouter или попробуйте позже |
-
----
-
-## 💡 Альтернативные модели
-
-По умолчанию используется бесплатная модель `mistralai/mistral-7b-instruct:free`.
-
-Если она не работает, можно изменить модель в файле `src/lib/openrouter.ts`:
-
-```typescript
-const FREE_MODELS = [
-    'google/gemma-2-9b-it:free',
-    'meta-llama/llama-3.1-8b-instruct:free',
-    'mistralai/mistral-7b-instruct:free',
-]
+```bash
+GOOGLE_AI_API_KEY=<your-google-ai-api-key>
 ```
 
-Просто поменяйте порядок моделей.
+Do not expose this key with a `NEXT_PUBLIC_` prefix.
 
----
+## Local Setup
 
-## 🆘 Если ничего не помогло
+1. Create or update `.env.local`.
+2. Add `GOOGLE_AI_API_KEY`.
+3. Restart `npm run dev`.
+4. Open `/status` and confirm `Google Gemini AI` is configured.
+5. Test `/api/test-ai` or send a message through the AI assistant.
 
-1. Откройте DevTools (F12) → Console
-2. Попробуйте отправить сообщение AI помощнику
-3. Посмотрите на ошибки в консоли
-4. Скопируйте ошибки и отправьте разработчику
+## Vercel Setup
 
----
+1. Open the Vercel project.
+2. Go to `Settings -> Environment Variables`.
+3. Add `GOOGLE_AI_API_KEY` for Production, Preview, and Development.
+4. Redeploy the latest deployment.
+5. Verify `/status` after the deployment finishes.
 
-**После настройки AI помощник будет работать!** 🎉
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| `GOOGLE_AI_API_KEY is not set` | Add the variable in `.env.local` or Vercel and restart/redeploy. |
+| AI assistant says it is not configured | Check that the key is server-side and does not use `NEXT_PUBLIC_`. |
+| Gemini request fails | Check the key, quota, and selected model in `src/lib/ai.ts`. |
+| `/status` shows an outage | Confirm the deployment has the same environment variables as local. |
+
+## Current Model
+
+The default model is configured in `src/lib/ai.ts` as:
+
+```ts
+const MODEL_NAME = 'gemini-3.1-flash-lite-preview'
+```
+
+If that preview model becomes unavailable, replace it with a currently enabled Gemini model and run `npm run type-check` plus `npm run test:run`.

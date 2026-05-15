@@ -4,6 +4,14 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from './ThemeProvider'
 import { Topbar } from './Topbar'
 
+const routerPushMock = vi.fn()
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: routerPushMock,
+  }),
+}))
+
 /**
  * Topbar — App_Shell glass-поверхность с Command_Palette-триггером,
  * индикатором уведомлений, кнопкой профиля и мобильным Drawer'ом меню.
@@ -13,6 +21,7 @@ import { Topbar } from './Topbar'
 
 afterEach(() => {
   cleanup()
+  routerPushMock.mockClear()
 })
 
 function renderTopbar(props: Parameters<typeof Topbar>[0]) {

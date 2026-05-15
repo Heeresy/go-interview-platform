@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getAIHint } from '@/lib/ai'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   console.log('[AI Assist] Request received')
+
+  const rateLimit = checkRateLimit(request, {
+    key: 'api:ai-assist',
+    limit: 30,
+    windowMs: 60_000,
+  })
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit)
 
   try {
     const body = await request.json()

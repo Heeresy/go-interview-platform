@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 import { evaluateAnswer } from "@/lib/ai"
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
+    const rateLimit = checkRateLimit(request, {
+        key: 'api:evaluate',
+        limit: 20,
+        windowMs: 60_000,
+    })
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit)
+
     try {
         const { question, reference_answer, user_answer } = await request.json()
 

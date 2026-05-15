@@ -29,13 +29,13 @@ describe('<TrainerQuickCard />', () => {
 
         // Уровень (mock = 1).
         const level = await findByTestId('trainer-current-level')
-        expect(level.textContent).toMatch(/Уровень\s*1/)
+        expect(level.textContent).toMatch(/Уровень\s*2/)
 
         // CTA.
         const link = (await findByTestId(
             'trainer-continue-link',
         )) as HTMLAnchorElement
-        expect(link.getAttribute('href')).toBe('/trainer')
+        expect(link.getAttribute('href')).toBe('/trainer?level=2')
         expect(link.textContent).toContain(t('common.continue'))
     })
 
@@ -49,7 +49,7 @@ describe('<TrainerQuickCard />', () => {
             <TrainerQuickCard endpoint="/api/trainer/state" />,
         )
         const level = await findByTestId('trainer-current-level')
-        expect(level.textContent).toMatch(/Уровень\s*1/)
+        expect(level.textContent).toMatch(/Уровень\s*2/)
         expect(queryByRole('alert')).toBeNull()
     })
 

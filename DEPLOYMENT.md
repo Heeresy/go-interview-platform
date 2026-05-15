@@ -5,7 +5,7 @@
 - [ ] GitHub account (code repository)
 - [ ] Vercel account (hosting)
 - [ ] Supabase project (database)
-- [ ] OpenRouter API key (AI evaluation)
+- [ ] Google Gemini API key (AI evaluation)
 
 ---
 
@@ -61,7 +61,7 @@ Add these for each environment (Production, Preview, Development):
 ```
 NEXT_PUBLIC_SUPABASE_URL=<your_supabase_url>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_supabase_key>
-OPENROUTER_API_KEY=<your_openrouter_key>
+GOOGLE_AI_API_KEY=<your_google_ai_key>
 NEXT_PUBLIC_SITE_URL=https://your-project.vercel.app
 ```
 
@@ -180,7 +180,7 @@ npm start
 - [ ] Environment variables set in Vercel
 - [ ] Supabase migrations applied
 - [ ] Database is configured
-- [ ] OpenRouter API working
+- [ ] Google Gemini API working
 - [ ] Vercel deployment successful
 - [ ] HTTPS enabled (automatic)
 - [ ] Custom domain set (if desired)
@@ -239,11 +239,11 @@ Check Vercel **Logs** tab or browser console:
 # - Verify tables exist
 
 # If AI errors:
-# - Check OpenRouter key is valid
+# - Check Google Gemini key is valid
 # - Verify API quota not exceeded
 
 # If code execution errors:
-# - Test Piston API directly
+# - Verify JDoodle and/or Glot credentials
 # - Check Go version compatibility
 ```
 

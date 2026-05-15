@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 import { executeGoCode } from '@/lib/execution-engine'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
+    const rateLimit = checkRateLimit(request, {
+        key: 'api:execute',
+        limit: 20,
+        windowMs: 60_000,
+    })
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit)
+
     try {
         const { code, test_cases, time_limit_ms, memory_limit_mb } = await request.json()
 

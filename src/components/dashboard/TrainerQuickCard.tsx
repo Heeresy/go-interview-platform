@@ -15,7 +15,7 @@
  *
  *   - Loader пытается обратиться к эндпоинту `/api/trainer/state`;
  *     пока эндпоинт не поднят, loader тихо деградирует на mock
- *     (safe-default `currentLevel: 1`). Поведение эквивалентно
+ *     (safe-default `currentLevel: 2`). Поведение эквивалентно
  *     `NextTaskCard` и `ProgressCard` — fallback только при !ok или
  *     невалидном payload-е, но сетевой throw пробрасывается в
  *     ErrorState.
@@ -60,9 +60,9 @@ interface TrainerState {
 }
 
 /**
- * Safe-default: уровень 1, совместимо с `lib/trainer.ts` (старт с 1).
+ * Safe-default: уровень 2, чтобы dashboard вел к базовому рабочему уровню.
  */
-const MOCK_TRAINER: TrainerState = { currentLevel: 1 }
+const MOCK_TRAINER: TrainerState = { currentLevel: 2 }
 
 function parseTrainerState(input: unknown): TrainerState | null {
     if (!input || typeof input !== 'object') return null
