@@ -691,6 +691,7 @@
   .glass > * {
     position: relative;
     z-index: 6;
+    isolation: isolate;
   }
 
   .glass:hover {
