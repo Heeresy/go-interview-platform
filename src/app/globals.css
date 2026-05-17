@@ -637,8 +637,8 @@
              --glass-bg-alpha (default 0.55, in range 0.4–0.7),
              --glass-border-alpha (default 0.10, in range 0.06–0.12). */
   .glass {
-    --filter-glass3d: blur(22px) brightness(1) saturate(1.8);
-    --color-glass3d: hsl(189 100% 11% / 0.25);
+    --filter-glass3d: blur(18px) brightness(0.85) saturate(2.5);
+    --color-glass3d: hsl(224 0% 100% / 0);
     --noise-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
     position: relative;
     z-index: 4;
@@ -705,7 +705,7 @@
   }
 
   .glass--strong {
-    --color-glass3d: hsl(189 100% 11% / 0.45);
+    --color-glass3d: hsl(224 0% 100% / 0.05);
   }
 
   /* Buttons */

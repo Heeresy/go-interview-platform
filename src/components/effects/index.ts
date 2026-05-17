@@ -25,6 +25,8 @@ export { DottedSurface } from './DottedSurface'
 export { EtherealShadow } from './EtherealShadow'
 export type { EtherealShadowProps } from './EtherealShadow'
 
+export { PaperShadersBackground } from './PaperShadersBackground'
+
 export { NoiseOverlay } from './NoiseOverlay'
 
 export { default as CursorGlow } from './CursorGlow'

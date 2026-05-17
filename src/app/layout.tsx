@@ -4,7 +4,7 @@ import './globals.css'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 
-import { DottedSurface, NoiseOverlay } from '@/components/effects'
+import { PaperShadersBackground, NoiseOverlay } from '@/components/effects'
 import { ThemeProvider } from '@/components/shell/ThemeProvider'
 import { SkipLink, ToastProvider } from '@/components/ui'
 import { PageTransition } from '@/components/layout/PageTransition'
@@ -94,11 +94,10 @@ export default function RootLayout({
             <SkipLink />
 
             {/*
-              Фоновые слои (Req 3.1, 22.5). Монтируются единожды в корне.
-              DottedSurface — анимированная 3D-сетка точек через Three.js.
-              z-index: -2 (фон), pointer-events: none.
+              Фоновые слои. PaperShadersBackground — WebGL shader background.
+              z-index: 0 (фон), pointer-events: none.
             */}
-            <DottedSurface />
+            <PaperShadersBackground />
             <NoiseOverlay />
 
             <PageTransition>
