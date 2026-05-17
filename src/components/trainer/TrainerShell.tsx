@@ -220,11 +220,10 @@ export function TrainerShell({
   // чтобы не подменять весь экран. Загрузочные ошибки идут через `phase`.
   const [submitError, setSubmitError] = useState(false)
 
+  // Track shown question IDs to avoid repeats within a session
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
+
   // ── Data loading ──────────────────────────────────────────────────────
-  // Использует существующий `createClient` из `@/lib/supabase/client`
-  // без изменений контракта (Req 21.2). Партия загружается каждый раз,
-  // когда меняется `level` либо явный `reload` (по retry / завершению
-  // партии).
   const loadBatch = useCallback(
     async (forLevel: Difficulty) => {
       setPhase('loading')
@@ -235,39 +234,66 @@ export function TrainerShell({
       setSubmitError(false)
       try {
         const supabase = createClient()
-        // Try loading questions for the specific difficulty level
-        const initial = await supabase
+
+        // Load a larger pool and shuffle on client to get random questions
+        const POOL_SIZE = 50
+        let { data, error } = await supabase
           .from('questions')
           .select('*, category:categories(*)')
           .eq('difficulty', forLevel)
-          .order('created_at')
-          .limit(QUESTIONS_PER_BATCH)
-        if (initial.error) {
+          .limit(POOL_SIZE)
+
+        if (error) {
           setPhase('error')
           return
         }
-        let data = initial.data
-        // Fallback: if no questions at this level, load any available questions
+
+        // Fallback: if no questions at this level, load any available
         if (!data || data.length === 0) {
           const fallback = await supabase
             .from('questions')
             .select('*, category:categories(*)')
-            .order('difficulty')
-            .order('created_at')
-            .limit(QUESTIONS_PER_BATCH)
+            .limit(POOL_SIZE)
           if (fallback.error || !fallback.data || fallback.data.length === 0) {
             setPhase('empty')
             return
           }
           data = fallback.data
         }
-        setQuestions(data as Question[])
+
+        // Filter out already-seen questions
+        let available = data.filter((q) => !seenIds.has(q.id))
+
+        // If all questions at this level have been seen, reset seen list
+        // for this level and use all questions
+        if (available.length === 0) {
+          available = data
+          // Don't reset seenIds globally — just allow repeats for this level
+        }
+
+        // Shuffle using Fisher-Yates
+        for (let i = available.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[available[i], available[j]] = [available[j], available[i]]
+        }
+
+        // Take batch
+        const batch = available.slice(0, QUESTIONS_PER_BATCH)
+
+        // Mark these as seen
+        setSeenIds((prev) => {
+          const next = new Set(prev)
+          for (const q of batch) next.add(q.id)
+          return next
+        })
+
+        setQuestions(batch as Question[])
         setPhase('ready')
       } catch {
         setPhase('error')
       }
     },
-    [],
+    [seenIds],
   )
 
   useEffect(() => {
