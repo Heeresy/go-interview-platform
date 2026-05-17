@@ -20,6 +20,8 @@
 export { AuroraBackground } from './AuroraBackground'
 export type { AuroraBackgroundProps } from './AuroraBackground'
 
+export { DottedSurface } from './DottedSurface'
+
 export { EtherealShadow } from './EtherealShadow'
 export type { EtherealShadowProps } from './EtherealShadow'
 
