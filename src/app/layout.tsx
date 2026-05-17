@@ -4,7 +4,7 @@ import './globals.css'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 
-import { PaperShadersBackground, NoiseOverlay } from '@/components/effects'
+import { EtherealShadow, NoiseOverlay } from '@/components/effects'
 import { ThemeProvider } from '@/components/shell/ThemeProvider'
 import { SkipLink, ToastProvider } from '@/components/ui'
 import { PageTransition } from '@/components/layout/PageTransition'
@@ -94,10 +94,25 @@ export default function RootLayout({
             <SkipLink />
 
             {/*
-              Фоновые слои. PaperShadersBackground — WebGL shader background.
+              Фоновые слои. EtherealShadow — animated SVG turbulence background.
               z-index: 0 (фон), pointer-events: none.
             */}
-            <PaperShadersBackground />
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 0,
+                pointerEvents: 'none',
+              }}
+              aria-hidden="true"
+            >
+              <EtherealShadow
+                color="rgba(128, 128, 128, 1)"
+                animation={{ scale: 100, speed: 90 }}
+                noise={{ opacity: 1, scale: 1.2 }}
+                sizing="fill"
+              />
+            </div>
             <NoiseOverlay />
 
             <PageTransition>
