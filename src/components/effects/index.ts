@@ -20,6 +20,9 @@
 export { AuroraBackground } from './AuroraBackground'
 export type { AuroraBackgroundProps } from './AuroraBackground'
 
+export { EtherealShadow } from './EtherealShadow'
+export type { EtherealShadowProps } from './EtherealShadow'
+
 export { NoiseOverlay } from './NoiseOverlay'
 
 export { default as CursorGlow } from './CursorGlow'

@@ -4,7 +4,7 @@ import './globals.css'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 
-import { AuroraBackground, NoiseOverlay } from '@/components/effects'
+import { EtherealShadow, NoiseOverlay } from '@/components/effects'
 import { ThemeProvider } from '@/components/shell/ThemeProvider'
 import { SkipLink, ToastProvider } from '@/components/ui'
 import { PageTransition } from '@/components/layout/PageTransition'
@@ -94,13 +94,26 @@ export default function RootLayout({
             <SkipLink />
 
             {/*
-              Фоновые слои (Req 3.1, 22.5). Монтируются единожды в корне,
-              z-index приходит из токенов: Aurora — `--z-bg` (-2),
-              Noise — `calc(var(--z-bg) + 1)` (-1). Оба `position: fixed`
-              и `pointer-events: none`, поэтому не влияют на поток
-              контента и не перехватывают ввод.
+              Фоновые слои (Req 3.1, 22.5). Монтируются единожды в корне.
+              EtherealShadow — анимированный фон через SVG turbulence.
+              z-index: -2 (фон), pointer-events: none.
             */}
-            <AuroraBackground />
+            <div
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: -2,
+                pointerEvents: 'none',
+              }}
+              aria-hidden="true"
+            >
+              <EtherealShadow
+                color="rgba(80, 120, 200, 0.6)"
+                animation={{ scale: 60, speed: 50 }}
+                noise={{ opacity: 0.4, scale: 1.2 }}
+                sizing="fill"
+              />
+            </div>
             <NoiseOverlay />
 
             <PageTransition>

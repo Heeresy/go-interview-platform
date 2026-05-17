@@ -658,42 +658,75 @@
              --glass-bg-alpha (default 0.55, in range 0.4–0.7),
              --glass-border-alpha (default 0.10, in range 0.06–0.12). */
   .glass {
-    background: color-mix(
-      in oklch,
-      var(--surface-500) calc(var(--glass-bg-alpha) * 100%),
-      transparent
-    );
-    backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
-    border: 1px solid
-      color-mix(
-        in oklch,
-        var(--border-500) calc(var(--glass-border-alpha) * 100%),
-        transparent
-      );
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-2);
-    transition: border-color var(--dur-base) var(--ease-standard),
-                box-shadow var(--dur-base) var(--ease-standard);
+    --filter-glass3d: blur(22px) brightness(1) saturate(1.8);
+    --color-glass3d: hsl(189 100% 11% / 0.25);
+    --noise-glass3d: url("https://www.transparenttextures.com/patterns/egg-shell.png");
     position: relative;
+    z-index: 4;
+    border-radius: var(--radius-lg);
+    border: none;
+    box-shadow:
+      0 0 0.75px hsl(205 20% 10% / 0.2),
+      0.7px 0.8px 1.2px -0.4px hsl(205 20% 10% / 0.1),
+      1.3px 1.5px 2.2px -0.8px hsl(205 20% 10% / 0.1),
+      2.3px 2.6px 3.9px -1.2px hsl(205 20% 10% / 0.1),
+      3.9px 4.4px 6.6px -1.7px hsl(205 20% 10% / 0.1),
+      6.5px 7.2px 10.9px -2.1px hsl(205 20% 10% / 0.1),
+      8px 9px 14px -2.5px hsl(205 20% 10% / 0.2);
+    transition: box-shadow var(--dur-base) var(--ease-standard);
+    overflow: visible;
+  }
+
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
     overflow: hidden;
+    z-index: 3;
+    -webkit-backdrop-filter: var(--filter-glass3d);
+    backdrop-filter: var(--filter-glass3d);
+    background-color: var(--color-glass3d);
+    background-image: var(--noise-glass3d);
+    background-size: 100px;
+    background-repeat: repeat;
+  }
+
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    overflow: hidden;
+    z-index: 5;
+    box-shadow:
+      inset 2px 2px 1px -3px hsl(205 20% 90% / 0.8),
+      inset 4px 4px 2px -6px hsl(205 20% 90% / 0.3),
+      inset 1.5px 1.5px 1.5px -0.75px hsl(205 20% 90% / 0.15),
+      inset 1.5px 1.5px 0.25px hsl(205 20% 90% / 0.03),
+      inset 0 0 0.25px 0.5px hsl(205 20% 90% / 0.03);
+  }
+
+  .glass > * {
+    position: relative;
+    z-index: 6;
   }
 
   .glass:hover {
-    border-color: color-mix(
-      in oklch,
-      var(--border-500) 18%,
-      transparent
-    );
-    box-shadow: var(--shadow-3);
+    box-shadow:
+      0 0 0.75px hsl(205 20% 10% / 0.25),
+      0.7px 0.8px 1.2px -0.4px hsl(205 20% 10% / 0.12),
+      1.3px 1.5px 2.2px -0.8px hsl(205 20% 10% / 0.12),
+      2.3px 2.6px 3.9px -1.2px hsl(205 20% 10% / 0.12),
+      3.9px 4.4px 6.6px -1.7px hsl(205 20% 10% / 0.12),
+      6.5px 7.2px 10.9px -2.1px hsl(205 20% 10% / 0.12),
+      10px 11px 16px -2.5px hsl(205 20% 10% / 0.25);
   }
 
   .glass--strong {
-    background: color-mix(
-      in oklch,
-      var(--surface-500) 75%,
-      transparent
-    );
+    --color-glass3d: hsl(189 100% 11% / 0.45);
   }
 
   /* Buttons */

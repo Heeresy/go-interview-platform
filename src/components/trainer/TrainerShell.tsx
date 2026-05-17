@@ -49,6 +49,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
 } from 'react'
@@ -220,8 +221,9 @@ export function TrainerShell({
   // чтобы не подменять весь экран. Загрузочные ошибки идут через `phase`.
   const [submitError, setSubmitError] = useState(false)
 
-  // Track shown question IDs to avoid repeats within a session
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
+  // Track shown question IDs to avoid repeats within a session.
+  // Using ref so loadBatch doesn't get recreated when this changes.
+  const seenIdsRef = useRef<Set<string>>(new Set())
 
   // ── Data loading ──────────────────────────────────────────────────────
   const loadBatch = useCallback(
@@ -262,13 +264,12 @@ export function TrainerShell({
         }
 
         // Filter out already-seen questions
-        let available = data.filter((q) => !seenIds.has(q.id))
+        const seen = seenIdsRef.current
+        let available = data.filter((q) => !seen.has(q.id))
 
-        // If all questions at this level have been seen, reset seen list
-        // for this level and use all questions
+        // If all questions at this level have been seen, allow repeats
         if (available.length === 0) {
           available = data
-          // Don't reset seenIds globally — just allow repeats for this level
         }
 
         // Shuffle using Fisher-Yates
@@ -281,11 +282,7 @@ export function TrainerShell({
         const batch = available.slice(0, QUESTIONS_PER_BATCH)
 
         // Mark these as seen
-        setSeenIds((prev) => {
-          const next = new Set(prev)
-          for (const q of batch) next.add(q.id)
-          return next
-        })
+        for (const q of batch) seen.add(q.id)
 
         setQuestions(batch as Question[])
         setPhase('ready')
@@ -293,7 +290,7 @@ export function TrainerShell({
         setPhase('error')
       }
     },
-    [seenIds],
+    [],
   )
 
   useEffect(() => {
